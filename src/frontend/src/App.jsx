@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { PatientDashboard } from './pages/PatientDashboard';
-import { DoctorDashboard } from './pages/DoctorDashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { BookingPage } from './pages/BookingPage';
+import {LandingPage} from "./components/pages/LandingPage.jsx";
+import {LoginPage} from "./components/pages/LoginPage.jsx";
+import {RegisterPage} from "./components/pages/RegisterPage.jsx";
+import {PatientDashboard} from "./components/pages/PatientDashboard.jsx";
+import {BookingPage} from "./components/pages/BookingPage.jsx";
+import {DoctorDashboard} from "./components/pages/DoctorDashboard.jsx";
+import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
 
 
 

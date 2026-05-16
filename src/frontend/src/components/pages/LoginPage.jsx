@@ -2,26 +2,29 @@ import { useState } from 'react';
 import { Mail, Lock, Activity, Eye, EyeOff } from 'lucide-react';
 import '../../styles/pages/LoginPage.css';
 
+
+
+
 export function LoginPage({ onLogin, onSignUpClick }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setError('');
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
 
-        if (!email || !password) {
-            setError('Veuillez remplir tous les champs');
-            return;
-        }
+    if (!email || !password) {
+      setError('Veuillez remplir tous les champs');
+      return;
+    }
 
-        onLogin?.(email, password);
-    };
+    onLogin?.(email, password);
+  };
 
-    return (
-        <div className="login-container">
+  return (
+    <div className="login-container">
             <div className="login-form-container">
                 <div className="login-form-wrapper">
 
@@ -39,19 +42,19 @@ export function LoginPage({ onLogin, onSignUpClick }) {
                         </p>
                     </div>
 
-                    <Card className="login-card">
+                    <div className={["card", "login-card"].filter(Boolean).join(" ")}>
                         <form onSubmit={handleSubmit}>
                             <div className="login-input-group">
                                 <label className="login-label">Adresse E-mail</label>
                                 <div className="login-input-wrapper">
                                     <Mail className="login-input-icon" size={20} />
-                                    <Input
-                                        type="email"
-                                        placeholder="vous@exemple.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="login-input"
-                                    />
+                                    <input className={["input",
+
+
+
+
+                  "login-input"].filter(Boolean).join(" ")} type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  
                                 </div>
                             </div>
 
@@ -59,28 +62,28 @@ export function LoginPage({ onLogin, onSignUpClick }) {
                                 <label className="login-label">Mot de passe</label>
                                 <div className="login-input-wrapper">
                                     <Lock className="login-input-icon" size={20} />
-                                    <Input
-                                        type={showPassword ? 'text' : 'password'}
-                                        placeholder="Entrez votre mot de passe"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="login-input-password"
-                                    />
+                                    <input className={["input",
+
+
+
+
+                  "login-input-password"].filter(Boolean).join(" ")} type={showPassword ? 'text' : 'password'} placeholder="Entrez votre mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  
                                     <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="login-password-toggle"
-                                    >
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="login-password-toggle">
+                    
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
                                 </div>
                             </div>
 
                             {error &&
-                                <div className="login-error">
+              <div className="login-error">
                                     {error}
                                 </div>
-                            }
+              }
 
                             <div className="login-options">
                                 <label className="login-remember">
@@ -92,9 +95,9 @@ export function LoginPage({ onLogin, onSignUpClick }) {
                                 </a>
                             </div>
 
-                            <Button type="submit" fullWidth>
+                            <button className={["btn", "btn-primary", "btn-full"].filter(Boolean).join(" ")} type="submit">
                                 Se connecter
-                            </Button>
+                            </button>
                         </form>
 
                         <div className="login-footer">
@@ -103,16 +106,16 @@ export function LoginPage({ onLogin, onSignUpClick }) {
                                 S'inscrire
                             </button>
                         </div>
-                    </Card>
+                    </div>
 
-                    <Card className="login-demo-card">
+                    <div className={["card", "login-demo-card"].filter(Boolean).join(" ")}>
                         <p className="login-demo-title">Identifiants de démonstration :</p>
                         <div className="login-demo-content">
                             <p>Patient: patient@demo.com / demo123</p>
                             <p>Médecin: doctor@demo.com / demo123</p>
                             <p>Admin: admin@demo.com / demo123</p>
                         </div>
-                    </Card>
+                    </div>
                 </div>
             </div>
 
@@ -137,6 +140,6 @@ export function LoginPage({ onLogin, onSignUpClick }) {
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        </div>);
+
 }

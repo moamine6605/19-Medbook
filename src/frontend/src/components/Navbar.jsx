@@ -1,13 +1,13 @@
 import { Activity, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from './ui/button';
-import '../../styles/components/Navbar.css';
+
+import '../styles/components/Navbar.css';
 
 export function Navbar({ onLoginClick, onSignUpClick }) {
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    return (
-        <nav className="navbar">
+  return (
+    <nav className="navbar">
             <div className="navbar-logo-container">
                 <div className="navbar-logo-icon">
                     <Activity color="white" />
@@ -23,20 +23,20 @@ export function Navbar({ onLoginClick, onSignUpClick }) {
             </div>
 
             <div className="desktop-nav-auth">
-                <Button variant="ghost" onClick={onLoginClick}>
+                <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")} onClick={onLoginClick}>
                     Se connecter
-                </Button>
-                <Button onClick={onSignUpClick}>
+                </button>
+                <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onSignUpClick}>
                     S'inscrire
-                </Button>
+                </button>
             </div>
 
             <button
-                className="mobile-menu-btn"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
+        className="mobile-menu-btn"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        
                 {mobileMenuOpen ? <X /> : <Menu />}
             </button>
-        </nav>
-    );
+        </nav>);
+
 }

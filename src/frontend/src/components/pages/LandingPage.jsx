@@ -1,92 +1,99 @@
 import {
-    Calendar,
-    Clock,
-    Shield,
-    Users,
-    Star
-} from 'lucide-react';
+  Calendar,
+  Clock,
+  Shield,
+  Users,
+  Star } from
+'lucide-react';
 import '../../styles/pages/LandingPage.css';
-import {Button} from "../ui/button.jsx";
+
+import { Navbar } from "../Navbar.jsx";
+
+function getInitials(name = 'User') {
+  return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
+}
+
+
 
 export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
-    const features = [
-        {
-            icon: Calendar,
-            title: 'Réservation facile',
-            description: 'Prenez rendez-vous en moins de 3 clics. Simple, rapide et intuitif.'
-        },
-        {
-            icon: Clock,
-            title: 'Gagnez du temps',
-            description: 'Fini l\'attente au téléphone. Prenez rendez-vous en ligne 24h/24 et 7j/7.'
-        },
-        {
-            icon: Shield,
-            title: 'Sécurisé et privé',
-            description: 'Vos données médicales sont cryptées et protégées.'
-        },
-        {
-            icon: Users,
-            title: 'Les meilleurs médecins',
-            description: 'Accédez à un réseau de professionnels de la santé vérifiés et expérimentés.'
-        }
-    ];
+  const features = [
+  {
+    icon: Calendar,
+    title: 'Réservation facile',
+    description: 'Prenez rendez-vous en moins de 3 clics. Simple, rapide et intuitif.'
+  },
+  {
+    icon: Clock,
+    title: 'Gagnez du temps',
+    description: 'Fini l\'attente au téléphone. Prenez rendez-vous en ligne 24h/24 et 7j/7.'
+  },
+  {
+    icon: Shield,
+    title: 'Sécurisé et privé',
+    description: 'Vos données médicales sont cryptées et protégées.'
+  },
+  {
+    icon: Users,
+    title: 'Les meilleurs médecins',
+    description: 'Accédez à un réseau de professionnels de la santé vérifiés et expérimentés.'
+  }];
 
-    const doctors = [
-        {
-            name: 'Dr. Sarah Johnson',
-            specialty: 'Cardiologue',
-            rating: 4.9,
-            reviews: 234,
-            experience: '15 ans'
-        },
-        {
-            name: 'Dr. Michael Chen',
-            specialty: 'Neurologue',
-            rating: 4.8,
-            reviews: 189,
-            experience: '12 ans'
-        },
-        {
-            name: 'Dr. Emily Williams',
-            specialty: 'Pédiatre',
-            rating: 5.0,
-            reviews: 312,
-            experience: '10 ans'
-        }
-    ];
 
-    const testimonials = [
-        {
-            name: 'Jessica Smith',
-            role: 'Patient',
-            content: 'Medbook a rendu la prise de rendez-vous si facile. L\'interface est claire et j\'ai trouvé le médecin idéal en quelques minutes !',
-            rating: 5
-        },
-        {
-            name: 'Robert Martinez',
-            role: 'Patient',
-            content: 'Enfin une plateforme de santé qui fonctionne vraiment. Fini les appels téléphoniques ou les longs temps d\'attente.',
-            rating: 5
-        },
-        {
-            name: 'Amanda Lee',
-            role: 'Patient',
-            content: 'J\'adore pouvoir gérer tous mes rendez-vous au même endroit. Les rappels sont super utiles aussi !',
-            rating: 5
-        }
-    ];
+  const doctors = [
+  {
+    name: 'Dr. Sarah Johnson',
+    specialty: 'Cardiologue',
+    rating: 4.9,
+    reviews: 234,
+    experience: '15 ans'
+  },
+  {
+    name: 'Dr. Michael Chen',
+    specialty: 'Neurologue',
+    rating: 4.8,
+    reviews: 189,
+    experience: '12 ans'
+  },
+  {
+    name: 'Dr. Emily Williams',
+    specialty: 'Pédiatre',
+    rating: 5.0,
+    reviews: 312,
+    experience: '10 ans'
+  }];
 
-    return (
-        <div className="landing-container">
+
+  const testimonials = [
+  {
+    name: 'Jessica Smith',
+    role: 'Patient',
+    content: 'Medbook a rendu la prise de rendez-vous si facile. L\'interface est claire et j\'ai trouvé le médecin idéal en quelques minutes !',
+    rating: 5
+  },
+  {
+    name: 'Robert Martinez',
+    role: 'Patient',
+    content: 'Enfin une plateforme de santé qui fonctionne vraiment. Fini les appels téléphoniques ou les longs temps d\'attente.',
+    rating: 5
+  },
+  {
+    name: 'Amanda Lee',
+    role: 'Patient',
+    content: 'J\'adore pouvoir gérer tous mes rendez-vous au même endroit. Les rappels sont super utiles aussi !',
+    rating: 5
+  }];
+
+
+  return (
+    <div className="landing-container">
             <Navbar onLoginClick={onLoginClick} onSignUpClick={onSignUpClick} />
 
             <section className="hero landing-hero">
                 <div className="landing-hero-content">
                     <div className="landing-badge">
-                        <Badge variant="default">
+                        <span className="landing-badge-text">
                             La santé simplifiée
-                        </Badge>
+                        </span>
                     </div>
                     <h1 className="landing-hero-title">
                         Prenez vos rendez-vous médicaux <span className="landing-hero-title-highlight">instantanément</span>
@@ -95,11 +102,11 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
                         Dites adieu aux longues files d'attente. Prenez rendez-vous avec les meilleurs médecins en quelques secondes, gérez votre parcours de soins et concentrez-vous sur l'essentiel : votre santé.
                     </p>
                     <div className="landing-hero-actions">
-                        <Button onClick={onGetStarted}>
+                        <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onGetStarted}>
                             <Calendar size={20} className="landing-hero-action-icon" />
                             Prendre rendez-vous
-                        </Button>
-                        <Button variant="outline">En savoir plus</Button>
+                        </button>
+                        <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>En savoir plus</button>
                     </div>
 
                     <div className="landing-stats-grid">
@@ -126,17 +133,17 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
                         <p className="text-muted">La plateforme de réservation médicale la plus intuitive pour vous faciliter la vie.</p>
                     </div>
                     <div className="landing-features-grid">
-                        {features.map((feature) => (
-                            <Card key={feature.title}>
-                                <CardContent className="landing-feature-card-content">
+                        {features.map((feature) =>
+            <div className={["card"].filter(Boolean).join(" ")} key={feature.title}>
+                                <div className={["card-content", "landing-feature-card-content"].filter(Boolean).join(" ")}>
                                     <div className="landing-feature-icon-wrapper">
                                         <feature.icon color="var(--primary)" size={28} />
                                     </div>
-                                    <CardTitle className="landing-feature-title">{feature.title}</CardTitle>
+                                    <h3 className={["card-title", "landing-feature-title"].filter(Boolean).join(" ")}>{feature.title}</h3>
                                     <p className="text-muted landing-feature-desc">{feature.description}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                </div>
+                            </div>
+            )}
                     </div>
                 </div>
             </section>
@@ -148,13 +155,13 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
                         <p className="text-muted">Des médecins vérifiés et expérimentés prêts à vous aider.</p>
                     </div>
                     <div className="landing-doctors-grid">
-                        {doctors.map((doctor) => (
-                            <Card key={doctor.name}>
-                                <CardContent className="landing-doctor-card-content">
-                                    <Avatar name={doctor.name} size="lg" className="landing-doctor-avatar" />
+                        {doctors.map((doctor) =>
+            <div className={["card"].filter(Boolean).join(" ")} key={doctor.name}>
+                                <div className={["card-content", "landing-doctor-card-content"].filter(Boolean).join(" ")}>
+                                    <div className={["avatar", "avatar-lg", "landing-doctor-avatar"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
                                     <h3 className="landing-doctor-name">{doctor.name}</h3>
                                     <div className="landing-doctor-specialty">
-                                        <Badge variant="default">{doctor.specialty}</Badge>
+                                        <span className="badge badge-default">{doctor.specialty}</span>
                                     </div>
                                     <div className="landing-doctor-rating-container">
                                         <Star color="var(--warning)" fill="var(--warning)" size={16} />
@@ -162,10 +169,10 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
                                         <span className="text-muted">({doctor.reviews} avis)</span>
                                     </div>
                                     <p className="text-muted landing-doctor-experience">Expérience : {doctor.experience}</p>
-                                    <Button variant="outline" fullWidth>Voir le profil</Button>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    <button type="button" className={["btn", "btn-outline", "btn-full"].filter(Boolean).join(" ")}>Voir le profil</button>
+                                </div>
+                            </div>
+            )}
                     </div>
                 </div>
             </section>
@@ -175,6 +182,6 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
                     <p className="text-muted landing-footer-text">© 2026 Medbook. Tous droits réservés.</p>
                 </div>
             </footer>
-        </div>
-    );
+        </div>);
+
 }

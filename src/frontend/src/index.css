@@ -128,6 +128,10 @@ p { margin-bottom: 1rem; }
   background: var(--secondary);
   color: white;
 }
+.btn-success {
+  background: var(--success);
+  color: white;
+}
 .btn-outline {
   background: transparent;
   border: 1px solid var(--border);
@@ -167,7 +171,10 @@ p { margin-bottom: 1rem; }
   font-weight: 600;
 }
 .badge-default { background: var(--primary); color: white; }
+.badge-primary { background: var(--primary); color: white; }
 .badge-secondary { background: var(--muted); color: var(--foreground); }
+.badge-success { background: var(--success); color: white; }
+.badge-warning { background: var(--warning); color: white; }
 .badge-outline { border: 1px solid var(--border); color: var(--foreground); }
 
 .avatar {
