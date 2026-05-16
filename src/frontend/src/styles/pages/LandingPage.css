@@ -1,0 +1,179 @@
+.landing-container {
+    background-color: var(--background);
+    min-height: 100vh;
+}
+
+.landing-hero {
+    /* Using standard padding from index.css or just local */
+    padding: 4rem 2rem;
+}
+
+.landing-hero-content {
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.landing-badge {
+    margin-bottom: 1rem;
+}
+
+.landing-hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.landing-hero-title-highlight {
+    color: var(--primary);
+}
+
+.landing-hero-subtitle {
+    font-size: 1.25rem;
+    max-width: 48rem;
+    margin: 0 auto 2rem auto;
+}
+
+.landing-hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.landing-hero-action-icon {
+    margin-right: 0.5rem;
+}
+
+.landing-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    max-width: 48rem;
+    margin: 4rem auto 0 auto;
+}
+
+.landing-stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary);
+    margin: 0;
+}
+
+.landing-stat-label {
+    margin: 0;
+}
+
+.landing-section {
+    padding: 5rem 2rem;
+}
+
+.landing-section-alt {
+    padding: 5rem 2rem;
+    background-color: rgba(248, 250, 252, 0.5);
+}
+
+.landing-section-content {
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.landing-section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.landing-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.landing-feature-card-content {
+    padding: 1.5rem;
+}
+
+.landing-feature-icon-wrapper {
+    width: 3.5rem;
+    height: 3.5rem;
+    background-color: rgba(37, 99, 235, 0.1);
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.landing-feature-title {
+    margin-bottom: 0.5rem;
+}
+
+.landing-feature-desc {
+    margin: 0;
+}
+
+.landing-doctors-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.landing-doctor-card-content {
+    padding: 2rem;
+    text-align: center;
+}
+
+.landing-doctor-avatar {
+    width: 5rem;
+    height: 5rem;
+    font-size: 2rem;
+    margin: 0 auto 1rem auto;
+}
+
+.landing-doctor-name {
+    margin: 0 0 0.5rem 0;
+}
+
+.landing-doctor-specialty {
+    margin-bottom: 1rem;
+}
+
+.landing-doctor-rating-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.landing-doctor-rating {
+    font-weight: bold;
+}
+
+.landing-doctor-experience {
+    margin-bottom: 1.5rem;
+}
+
+.landing-footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    background-color: rgba(248, 250, 252, 0.5);
+}
+
+.landing-footer-content {
+    max-width: 72rem;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.landing-footer-text {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .landing-stats-grid,
+    .landing-features-grid,
+    .landing-doctors-grid {
+        grid-template-columns: 1fr;
+    }
+}

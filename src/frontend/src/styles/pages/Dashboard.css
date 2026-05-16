@@ -1,0 +1,348 @@
+/* Shared Dashboard Styles */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-user-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dashboard-bell-btn {
+    position: relative;
+}
+
+.dashboard-notification-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: var(--destructive);
+    border-radius: 50%;
+}
+
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-stats-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-stat-card-content {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.dashboard-stat-title {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-stat-value {
+    font-size: 1.875rem;
+    font-weight: bold;
+}
+
+.dashboard-stat-icon-wrapper {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-stats-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-card-header-flex {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-btn-icon {
+    margin-right: 0.5rem;
+}
+
+.dashboard-appointment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dashboard-appointment-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+}
+
+.dashboard-appointment-info {
+    flex: 1;
+}
+
+.dashboard-appointment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-appointment-doctor {
+    font-weight: 500;
+    margin: 0;
+}
+
+.dashboard-appointment-specialty {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.dashboard-appointment-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.dashboard-appointment-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.dashboard-appointment-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dashboard-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.dashboard-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dashboard-action-btn:hover {
+    background-color: var(--muted);
+}
+
+.dashboard-action-icon-wrapper {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-action-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.dashboard-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dashboard-activity-item {
+    padding-bottom: 1rem;
+}
+
+.dashboard-activity-item:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-activity-content {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.dashboard-activity-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: var(--primary);
+    margin-top: 0.5rem;
+}
+
+.dashboard-activity-info {
+    flex: 1;
+}
+
+.dashboard-activity-title {
+    font-weight: 500;
+    font-size: 0.875rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.dashboard-activity-desc {
+    font-size: 0.875rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.dashboard-activity-time {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin: 0;
+}
+
+.dashboard-full-height-card {
+    height: 100%;
+}
+
+.dashboard-margin-bottom {
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-margin-top {
+    margin-top: 1rem;
+}
+
+.dashboard-patient-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dashboard-patient-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+}
+
+.dashboard-patient-item:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-patient-info {
+    flex: 1;
+}
+
+.dashboard-patient-name {
+    font-weight: 500;
+    margin: 0 0 0.25rem 0;
+}
+
+.dashboard-patient-details {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.dashboard-patient-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.dashboard-table-container {
+    overflow-x: auto;
+}
+
+.dashboard-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.dashboard-table th {
+    padding-bottom: 1rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-table td {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-table tr:last-child td {
+    border-bottom: none;
+}
+
+.dashboard-table-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dashboard-table-user-name {
+    font-weight: 500;
+    margin: 0;
+}
+
+.dashboard-table-user-email {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    margin: 0;
+}
+
+.dashboard-actions-row {
+    display: flex;
+    gap: 0.5rem;
+}

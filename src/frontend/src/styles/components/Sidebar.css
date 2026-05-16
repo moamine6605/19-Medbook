@@ -1,0 +1,45 @@
+.sidebar-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-logo-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--primary);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-logo-text {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.sidebar-user-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sidebar-user-info {
+    overflow: hidden;
+}
+
+.sidebar-user-name {
+    font-weight: bold;
+    margin: 0;
+}
+
+.sidebar-user-role {
+    text-transform: capitalize;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.sidebar-logout-btn {
+    color: var(--destructive);
+}

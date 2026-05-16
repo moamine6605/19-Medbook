@@ -1,0 +1,60 @@
+.navbar-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-logo-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--primary);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.navbar-logo-text {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.desktop-nav a {
+    font-weight: 500;
+    color: var(--foreground);
+    text-decoration: none;
+}
+
+.desktop-nav a:hover {
+    color: var(--primary);
+}
+
+.desktop-nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-menu-btn {
+    background: none;
+    border: none;
+    display: none;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .desktop-nav,
+    .desktop-nav-auth {
+        display: none;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+}
