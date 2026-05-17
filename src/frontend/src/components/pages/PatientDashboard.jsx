@@ -10,8 +10,10 @@ function getInitials(name = 'User') {
 
 
 
-export function PatientDashboard({ onLogout }) {
+export function PatientDashboard({ onLogout, user, onHomeClick }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const userName = user?.name || 'Utilisateur';
 
   const stats = [
   {
@@ -97,20 +99,20 @@ export function PatientDashboard({ onLogout }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="patient" userName="Jean Dupont" onLogout={onLogout} />
+            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="patient" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
                 <div className="dashboard-header">
                     <div>
                         <h1 className="dashboard-title">Tableau de bord</h1>
-                        <p className="text-muted">Bon retour, Jean !</p>
+                        <p className="text-muted">Bon retour, {userName.split(' ')[0]} !</p>
                     </div>
                     <div className="dashboard-user-actions">
                         <button type="button" className={["btn", "btn-ghost", "dashboard-bell-btn"].filter(Boolean).join(" ")}>
                             <Bell size={20} />
                             <span className="dashboard-notification-dot"></span>
                         </button>
-                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials("Jean Dupont")}</div>
+                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials(userName)}</div>
                     </div>
                 </div>
 

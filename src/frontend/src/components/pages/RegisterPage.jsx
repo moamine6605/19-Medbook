@@ -5,7 +5,7 @@ import '../../styles/pages/RegisterPage.css';
 
 
 
-export function RegisterPage({ onRegister, onLoginClick }) {
+export function RegisterPage({ onRegister, onLoginClick, onHomeClick }) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -73,7 +73,7 @@ export function RegisterPage({ onRegister, onLoginClick }) {
             <div className="register-form-container">
                 <div className="register-form-wrapper">
 
-                    <div className="register-logo-container">
+                    <div className="register-logo-container" onClick={onHomeClick} style={{ cursor: 'pointer' }}>
                         <div className="register-logo-icon">
                             <Activity color="white" />
                         </div>

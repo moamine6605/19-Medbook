@@ -10,8 +10,10 @@ function getInitials(name = 'User') {
 
 
 
-export function AdminDashboard({ onLogout }) {
+export function AdminDashboard({ onLogout, user, onHomeClick }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const userName = user?.name || 'Administrateur';
 
   const stats = [
   {
@@ -99,20 +101,20 @@ export function AdminDashboard({ onLogout }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" userName="Administrateur" onLogout={onLogout} />
+            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
                 <div className="dashboard-header">
                     <div>
                         <h1 className="dashboard-title">Tableau de bord administrateur</h1>
-                        <p className="text-muted">Aperçu du système et analytique</p>
+                        <p className="text-muted">Bienvenue, {userName}</p>
                     </div>
                     <div className="dashboard-user-actions">
                         <button type="button" className={["btn", "btn-ghost", "dashboard-bell-btn"].filter(Boolean).join(" ")}>
                             <Bell size={20} />
                             <span className="dashboard-notification-dot"></span>
                         </button>
-                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials("Administrateur")}</div>
+                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials(userName)}</div>
                     </div>
                 </div>
 

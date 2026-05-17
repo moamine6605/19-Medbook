@@ -1,14 +1,33 @@
-import { Activity, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Activity, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 import '../styles/components/Navbar.css';
 
-export function Navbar({ onLoginClick, onSignUpClick }) {
+function getInitials(name = 'User') {
+  return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
+}
+
+export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onHomeClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const userName = user?.name || 'Utilisateur';
 
   return (
     <nav className="navbar">
-            <div className="navbar-logo-container">
+            <div className="navbar-logo-container" onClick={onHomeClick} style={{ cursor: 'pointer' }}>
                 <div className="navbar-logo-icon">
                     <Activity color="white" />
                 </div>
@@ -22,14 +41,56 @@ export function Navbar({ onLoginClick, onSignUpClick }) {
                 <a href="#contact">Contact</a>
             </div>
 
-            <div className="desktop-nav-auth">
-                <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")} onClick={onLoginClick}>
-                    Se connecter
-                </button>
-                <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onSignUpClick}>
-                    S'inscrire
-                </button>
-            </div>
+            {isAuthenticated ? (
+                <div className="desktop-nav-auth" ref={dropdownRef}>
+                    <button
+                        type="button"
+                        className="navbar-user-btn"
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                    >
+                        <div className="avatar avatar-md navbar-avatar">
+                            {getInitials(userName)}
+                        </div>
+                        <span className="navbar-user-name">{userName}</span>
+                        <ChevronDown size={16} className={`navbar-chevron ${dropdownOpen ? 'open' : ''}`} />
+                    </button>
+
+                    {dropdownOpen && (
+                        <div className="navbar-dropdown">
+                            <div className="navbar-dropdown-header">
+                                <div className="avatar avatar-lg navbar-dropdown-avatar">
+                                    {getInitials(userName)}
+                                </div>
+                                <div className="navbar-dropdown-user-info">
+                                    <p className="navbar-dropdown-name">{userName}</p>
+                                    <p className="navbar-dropdown-email">{user?.email || ''}</p>
+                                </div>
+                            </div>
+                            <div className="navbar-dropdown-divider"></div>
+                            <button
+                                type="button"
+                                className="navbar-dropdown-item navbar-dropdown-logout"
+                                onClick={() => {
+                                    setDropdownOpen(false);
+                                    onLogout?.();
+                                }}
+                            >
+                                <LogOut size={16} />
+                                <span>Se déconnecter</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="desktop-nav-auth">
+                    <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")} onClick={onLoginClick}>
+                        Se connecter
+                    </button>
+                    <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onSignUpClick}>
+                        S'inscrire
+                    </button>
+                </div>
+            )}
 
             <button
         className="mobile-menu-btn"

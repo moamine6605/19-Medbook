@@ -14,20 +14,23 @@ import { login, register, logout, getUser } from './services/api';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [user, setUser] = useState(null);
 
   return (
       <BrowserRouter>
         <AppRoutes
             isAuthenticated={isAuthenticated}
             userRole={userRole}
+            user={user}
             setIsAuthenticated={setIsAuthenticated}
-            setUserRole={setUserRole} />
+            setUserRole={setUserRole}
+            setUser={setUser} />
 
       </BrowserRouter>);
 
 }
 
-function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole }) {
+function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUserRole, setUser }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,22 +38,25 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const user = await getUser();
+          const userData = await getUser();
           setIsAuthenticated(true);
-          setUserRole(user.role);
+          setUserRole(userData.role);
+          setUser(userData);
         } catch (error) {
+          console.error('Error getting user data:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
       }
     };
     initAuth();
-  }, [setIsAuthenticated, setUserRole]);
+  }, [setIsAuthenticated, setUserRole, setUser]);
 
   const handleLogin = async (email, password) => {
     const data = await login(email, password);
     setIsAuthenticated(true);
     setUserRole(data.user.role);
+    setUser(data.user);
 
     // Navigate based on role
     if (data.user.role === 'doctor') {
@@ -65,6 +71,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
   const handleRegister = async (data) => {
     const res = await register(data.fullName, data.email, data.password);
     setUserRole(res.user.role);
+    setUser(res.user);
     setIsAuthenticated(true);
     navigate('/patient/dashboard');
   };
@@ -73,6 +80,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
     await logout();
     setIsAuthenticated(false);
     setUserRole(null);
+    setUser(null);
     navigate('/');
   };
 
@@ -83,6 +91,9 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/"
             element={
               <LandingPage
+                  isAuthenticated={isAuthenticated}
+                  user={user}
+                  onLogout={handleLogout}
                   onGetStarted={() => navigate('/booking')}
                   onLoginClick={() => navigate('/login')}
                   onSignUpClick={() => navigate('/register')} />
@@ -97,7 +108,8 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
 
                   <LoginPage
                       onLogin={handleLogin}
-                      onSignUpClick={() => navigate('/register')} />
+                      onSignUpClick={() => navigate('/register')}
+                      onHomeClick={() => navigate('/')} />
 
 
             } />
@@ -110,7 +122,8 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
 
                   <RegisterPage
                       onRegister={handleRegister}
-                      onLoginClick={() => navigate('/login')} />
+                      onLoginClick={() => navigate('/login')}
+                      onHomeClick={() => navigate('/')} />
 
 
             } />
@@ -121,6 +134,12 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/booking"
             element={
               <BookingPage
+                  isAuthenticated={isAuthenticated}
+                  user={user}
+                  onLogout={handleLogout}
+                  onLoginClick={() => navigate('/login')}
+                  onSignUpClick={() => navigate('/register')}
+                  onHomeClick={() => navigate('/')}
                   onBookingComplete={() => {
                     if (isAuthenticated) {
                       navigate('/patient/dashboard');
@@ -137,7 +156,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/patient/dashboard"
             element={
               isAuthenticated && userRole === 'patient' ?
-                  <PatientDashboard onLogout={handleLogout} /> :
+                  <PatientDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
 
@@ -149,7 +168,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/doctor/dashboard"
             element={
               isAuthenticated && userRole === 'doctor' ?
-                  <DoctorDashboard onLogout={handleLogout} /> :
+                  <DoctorDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
 
@@ -161,7 +180,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/admin/dashboard"
             element={
               isAuthenticated && userRole === 'admin' ?
-                  <AdminDashboard onLogout={handleLogout} /> :
+                  <AdminDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
 

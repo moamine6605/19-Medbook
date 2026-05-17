@@ -20,9 +20,12 @@ export function Sidebar({
   activeTab = 'dashboard',
   onTabChange = () => {},
   userRole = 'patient',
-  userName = 'John Doe',
-  onLogout = () => {}
+  user = null,
+  onLogout = () => {},
+  onHomeClick = () => {}
 }) {
+  const userName = user?.name || 'Utilisateur';
+
   const patientMenuItems = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
   { id: 'appointments', icon: Calendar, label: 'Rendez-vous' },
@@ -55,7 +58,7 @@ export function Sidebar({
   return (
     <div className="sidebar">
             {/* Logo */}
-            <div className="sidebar-header">
+            <div className="sidebar-header" onClick={onHomeClick} style={{ cursor: 'pointer' }}>
                 <div className="sidebar-logo-container">
                     <div className="sidebar-logo-icon">
                         <Activity color="white" />

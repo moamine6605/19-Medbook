@@ -5,7 +5,7 @@ import '../../styles/pages/LoginPage.css';
 
 
 
-export function LoginPage({ onLogin, onSignUpClick }) {
+export function LoginPage({ onLogin, onSignUpClick, onHomeClick }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +32,7 @@ export function LoginPage({ onLogin, onSignUpClick }) {
             <div className="login-form-container">
                 <div className="login-form-wrapper">
 
-                    <div className="login-logo-container">
+                    <div className="login-logo-container" onClick={onHomeClick} style={{ cursor: 'pointer' }}>
                         <div className="login-logo-icon">
                             <Activity color="white" />
                         </div>

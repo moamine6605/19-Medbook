@@ -15,7 +15,7 @@ function getInitials(name = 'User') {
 
 
 
-export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
+export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, user, onLogout }) {
   const features = [
   {
     icon: Calendar,
@@ -63,30 +63,16 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick }) {
   }];
 
 
-  const testimonials = [
-  {
-    name: 'Jessica Smith',
-    role: 'Patient',
-    content: 'Medbook a rendu la prise de rendez-vous si facile. L\'interface est claire et j\'ai trouvé le médecin idéal en quelques minutes !',
-    rating: 5
-  },
-  {
-    name: 'Robert Martinez',
-    role: 'Patient',
-    content: 'Enfin une plateforme de santé qui fonctionne vraiment. Fini les appels téléphoniques ou les longs temps d\'attente.',
-    rating: 5
-  },
-  {
-    name: 'Amanda Lee',
-    role: 'Patient',
-    content: 'J\'adore pouvoir gérer tous mes rendez-vous au même endroit. Les rappels sont super utiles aussi !',
-    rating: 5
-  }];
-
-
   return (
     <div className="landing-container">
-            <Navbar onLoginClick={onLoginClick} onSignUpClick={onSignUpClick} />
+            <Navbar
+                onLoginClick={onLoginClick}
+                onSignUpClick={onSignUpClick}
+                isAuthenticated={isAuthenticated}
+                user={user}
+                onLogout={onLogout}
+                onHomeClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            />
 
             <section className="hero landing-hero">
                 <div className="landing-hero-content">
