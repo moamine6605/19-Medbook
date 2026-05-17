@@ -1,4 +1,4 @@
-import { Activity, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Activity, Menu, X, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 import '../styles/components/Navbar.css';
@@ -7,7 +7,7 @@ function getInitials(name = 'User') {
   return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
 }
 
-export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onHomeClick }) {
+export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onHomeClick, onDashboardClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -64,8 +64,23 @@ export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onL
                                 <div className="navbar-dropdown-user-info">
                                     <p className="navbar-dropdown-name">{userName}</p>
                                     <p className="navbar-dropdown-email">{user?.email || ''}</p>
+                                    <span className="navbar-dropdown-role">
+                                        {user?.role === 'doctor' ? 'Médecin' : user?.role === 'admin' ? 'Administrateur' : 'Patient'}
+                                    </span>
                                 </div>
                             </div>
+                            <div className="navbar-dropdown-divider"></div>
+                            <button
+                                type="button"
+                                className="navbar-dropdown-item"
+                                onClick={() => {
+                                    setDropdownOpen(false);
+                                    onDashboardClick?.();
+                                }}
+                            >
+                                <LayoutDashboard size={16} />
+                                <span>Tableau de bord</span>
+                            </button>
                             <div className="navbar-dropdown-divider"></div>
                             <button
                                 type="button"

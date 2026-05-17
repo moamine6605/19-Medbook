@@ -22,7 +22,7 @@ function formatCount(num) {
   return num + '+';
 }
 
-export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, user, onLogout }) {
+export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onDashboardClick }) {
   const [doctors, setDoctors] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +76,7 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                 isAuthenticated={isAuthenticated}
                 user={user}
                 onLogout={onLogout}
+                onDashboardClick={onDashboardClick}
                 onHomeClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             />
 

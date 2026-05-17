@@ -84,6 +84,16 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
     navigate('/');
   };
 
+  const handleDashboardClick = () => {
+    if (userRole === 'doctor') {
+      navigate('/doctor/dashboard');
+    } else if (userRole === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/patient/dashboard');
+    }
+  };
+
   return (
       <Routes>
         {/* Public Routes */}
@@ -94,6 +104,7 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
                   isAuthenticated={isAuthenticated}
                   user={user}
                   onLogout={handleLogout}
+                  onDashboardClick={handleDashboardClick}
                   onGetStarted={() => navigate('/booking')}
                   onLoginClick={() => navigate('/login')}
                   onSignUpClick={() => navigate('/register')} />
