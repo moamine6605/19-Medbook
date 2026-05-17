@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Services\JwtService;
 
 class AuthController extends Controller
 {
@@ -31,13 +32,14 @@ class AuthController extends Controller
             'role' => $role,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = JwtService::generateToken($user);
+        $cookie = cookie('token', $token, 120, '/', null, false, true, false, 'Lax');
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
-        ]);
+        ])->withCookie($cookie);
     }
 
     public function login(Request $request)
@@ -50,21 +52,22 @@ class AuthController extends Controller
 
         $user = User::where('email', $request['email'])->firstOrFail();
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = JwtService::generateToken($user);
+        $cookie = cookie('token', $token, 120, '/', null, false, true, false, 'Lax');
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
-        ]);
+        ])->withCookie($cookie);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $cookie = cookie()->forget('token');
 
         return response()->json([
             'message' => 'Logged out successfully'
-        ]);
+        ])->withCookie($cookie);
     }
 }
