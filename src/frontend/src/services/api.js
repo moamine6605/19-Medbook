@@ -135,4 +135,19 @@ export const getDoctorsBySpecialty = async (specialty) => {
     return response.data;
 };
 
+export const createAppointment = async (data) => {
+    const response = await api.post('/patient/appointments', data);
+    return response.data;
+};
+
+export const updateAppointment = async (id, data) => {
+    const response = await api.put(`/patient/appointments/${id}`, data);
+    return response.data;
+};
+
+export const deleteAppointment = async (id) => {
+    const response = await api.delete(`/patient/appointments/${id}`);
+    return response.data;
+};
+
 export default api;

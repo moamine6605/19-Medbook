@@ -28,6 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Patient dashboard routes
     Route::get('/patient/stats', [PatientController::class, 'stats']);
     Route::get('/patient/appointments', [PatientController::class, 'appointments']);
+    Route::post('/patient/appointments', [PatientController::class, 'store']);
+    Route::put('/patient/appointments/{id}', [PatientController::class, 'update']);
+    Route::delete('/patient/appointments/{id}', [PatientController::class, 'destroy']);
     Route::get('/patient/activity', [PatientController::class, 'activity']);
 
     // Doctor dashboard routes

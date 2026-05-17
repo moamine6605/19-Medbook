@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, Check } from 'lucide-react';
-import { getSpecialties, getDoctorsBySpecialty } from '../../services/api';
+import { getSpecialties, getDoctorsBySpecialty, createAppointment } from '../../services/api';
 import '../../styles/pages/BookingPage.css';
 
 function getInitials(name = 'User') {
@@ -89,8 +89,19 @@ export function BookingPage({ onBookingComplete }) {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleComplete = () => {
-    onBookingComplete?.();
+  const handleComplete = async () => {
+    try {
+      await createAppointment({
+        doctor_id: selectedDoctor?.id,
+        date: selectedDate,
+        time: selectedTime,
+        type: 'in-person'
+      });
+      onBookingComplete?.();
+    } catch (error) {
+      console.error("Erreur lors de la création du rendez-vous:", error);
+      alert("Une erreur est survenue lors de la réservation. Veuillez réinstaller ou réessayer.");
+    }
   };
 
   return (

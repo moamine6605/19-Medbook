@@ -96,6 +96,120 @@ class PatientController extends Controller
     }
 
     /**
+     * Store a new appointment.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id',
+            'date' => 'required|date_format:Y-m-d',
+            'time' => 'required',
+            'type' => 'nullable|in:in-person,video',
+            'reason' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        $doctor = \App\Models\Doctor::findOrFail($request->doctor_id);
+
+        $appointment = Appointment::create([
+            'patient_id' => $user->id,
+            'doctor_id' => $request->doctor_id,
+            'date' => $request->date,
+            'time' => $request->time,
+            'status' => 'upcoming',
+            'type' => $request->type ?? 'in-person',
+            'reason' => $request->reason ?? 'Consultation',
+        ]);
+
+        PatientActivity::create([
+            'patient_id' => $user->id,
+            'action' => 'Rendez-vous pris',
+            'description' => 'Avec le Dr. ' . $doctor->name . ' (' . $doctor->specialty . ')',
+            'type' => 'appointment',
+        ]);
+
+        return response()->json([
+            'message' => 'Rendez-vous créé avec succès',
+            'appointment' => [
+                'id' => $appointment->id,
+                'doctor' => $doctor->name,
+                'specialty' => $doctor->specialty,
+                'date' => $appointment->date->format('Y-m-d'),
+                'time' => $appointment->time,
+                'status' => $appointment->status,
+                'type' => $appointment->type,
+            ]
+        ], 201);
+    }
+
+    /**
+     * Update an appointment.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'date' => 'required|date_format:Y-m-d',
+            'time' => 'required',
+            'type' => 'nullable|in:in-person,video',
+        ]);
+
+        $user = $request->user();
+        $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
+
+        $appointment->date = $request->date;
+        $appointment->time = $request->time;
+        if ($request->has('type')) {
+            $appointment->type = $request->type;
+        }
+        $appointment->save();
+
+        $doctor = $appointment->doctor;
+
+        PatientActivity::create([
+            'patient_id' => $user->id,
+            'action' => 'Rendez-vous reporté',
+            'description' => 'Avec le Dr. ' . $doctor->name . ' au ' . Carbon::parse($request->date)->format('d/m/Y') . ' à ' . $request->time,
+            'type' => 'appointment',
+        ]);
+
+        return response()->json([
+            'message' => 'Rendez-vous modifié avec succès',
+            'appointment' => [
+                'id' => $appointment->id,
+                'doctor' => $doctor->name,
+                'specialty' => $doctor->specialty,
+                'date' => $appointment->date->format('Y-m-d'),
+                'time' => $appointment->time,
+                'status' => $appointment->status,
+                'type' => $appointment->type,
+            ]
+        ]);
+    }
+
+    /**
+     * Delete/Cancel an appointment.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
+
+        $doctor = $appointment->doctor;
+        $appointment->delete();
+
+        PatientActivity::create([
+            'patient_id' => $user->id,
+            'action' => 'Rendez-vous annulé',
+            'description' => 'Avec le Dr. ' . $doctor->name,
+            'type' => 'appointment',
+        ]);
+
+        return response()->json([
+            'message' => 'Rendez-vous supprimé avec succès',
+        ]);
+    }
+
+    /**
      * Format a date as a human-readable "time ago" string in French.
      */
     private function timeAgo(Carbon $date): string
