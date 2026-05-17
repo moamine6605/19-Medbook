@@ -2,11 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DoctorController extends Controller
 {
+    private static array $specialtyIcons = [
+        'Cardiologue' => '❤️',
+        'Neurologue' => '🧠',
+        'Pédiatre' => '👶',
+        'Dermatologue' => '✨',
+        'Orthopédiste' => '🦴',
+        'Médecin généraliste' => '🏥',
+        'Ophtalmologue' => '👁️',
+        'ORL' => '👂',
+        'Gynécologue' => '🩺',
+        'Urologue' => '🔬',
+        'Pneumologue' => '🫁',
+        'Gastro-entérologue' => '🏥',
+        'Rhumatologue' => '💪',
+        'Endocrinologue' => '⚕️',
+        'Psychiatre' => '🧩',
+        'Chirurgien' => '🔪',
+        'Radiologue' => '📡',
+        'Anesthésiste' => '💉',
+        'Oncologue' => '🎗️',
+        'Néphrologue' => '🫘',
+    ];
+
     /**
      * Get featured doctors for the landing page.
      */
@@ -36,5 +62,64 @@ class DoctorController extends Controller
             'patients_count' => $patientCount,
             'average_rating' => round($averageRating, 1),
         ]);
+    }
+
+    /**
+     * Get all specialties with doctor counts for the booking page.
+     */
+    public function specialties()
+    {
+        $specialties = Doctor::select('specialty')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('specialty')
+            ->orderByDesc('count')
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'id' => strtolower(str_replace([' ', '-', 'é', 'è'], ['_', '_', 'e', 'e'], $row->specialty)),
+                    'name' => $row->specialty,
+                    'icon' => self::$specialtyIcons[$row->specialty] ?? '🏥',
+                    'count' => $row->count,
+                ];
+            });
+
+        return response()->json($specialties);
+    }
+
+    /**
+     * Get doctors filtered by specialty for the booking page.
+     */
+    public function bySpecialty(Request $request)
+    {
+        $specialty = $request->query('specialty');
+
+        $query = Doctor::orderByDesc('rating');
+
+        if ($specialty) {
+            $query->where('specialty', $specialty);
+        }
+
+        $doctors = $query->limit(20)->get()->map(function ($doctor) {
+            // Check if doctor has appointments today
+            $todayCount = Appointment::where('doctor_id', $doctor->id)
+                ->whereDate('date', Carbon::today())
+                ->count();
+
+            $availability = $todayCount < 8
+                ? "Disponible aujourd'hui"
+                : 'Disponible demain';
+
+            return [
+                'id' => $doctor->id,
+                'name' => $doctor->name,
+                'specialty' => $doctor->specialty,
+                'rating' => $doctor->rating,
+                'reviews' => $doctor->reviews,
+                'experience' => $doctor->experience,
+                'availability' => $availability,
+            ];
+        });
+
+        return response()->json($doctors);
     }
 }

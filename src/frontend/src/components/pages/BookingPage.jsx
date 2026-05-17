@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, Check } from 'lucide-react';
+import { getSpecialties, getDoctorsBySpecialty } from '../../services/api';
 import '../../styles/pages/BookingPage.css';
 
 function getInitials(name = 'User') {
@@ -12,48 +13,51 @@ function getInitials(name = 'User') {
 export function BookingPage({ onBookingComplete }) {
   const [step, setStep] = useState(1);
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [selectedSpecialtyName, setSelectedSpecialtyName] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const specialties = [
-  { id: 'cardiology', name: 'Cardiologie', icon: '❤️', count: 45 },
-  { id: 'neurology', name: 'Neurologie', icon: '🧠', count: 32 },
-  { id: 'pediatrics', name: 'Pédiatrie', icon: '👶', count: 28 },
-  { id: 'dermatology', name: 'Dermatologie', icon: '✨', count: 38 },
-  { id: 'orthopedics', name: 'Orthopédie', icon: '🦴', count: 41 },
-  { id: 'general', name: 'Médecine générale', icon: '🏥', count: 52 }];
+  const [specialties, setSpecialties] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
+  // Fetch specialties on mount
+  useEffect(() => {
+    const fetchSpecialties = async () => {
+      try {
+        const data = await getSpecialties();
+        setSpecialties(data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des spécialités:', error);
+      } finally {
+        setLoadingSpecialties(false);
+      }
+    };
+    fetchSpecialties();
+  }, []);
 
-  const doctors = [
-  {
-    id: '1',
-    name: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologue',
-    rating: 4.9,
-    reviews: 234,
-    experience: '15 ans',
-    availability: 'Disponible aujourd\'hui'
-  },
-  {
-    id: '2',
-    name: 'Dr. Michael Chen',
-    specialty: 'Cardiologue',
-    rating: 4.8,
-    reviews: 189,
-    experience: '12 ans',
-    availability: 'Disponible demain'
-  },
-  {
-    id: '3',
-    name: 'Dr. Emily Williams',
-    specialty: 'Cardiologue',
-    rating: 5.0,
-    reviews: 312,
-    experience: '10 ans',
-    availability: 'Disponible aujourd\'hui'
-  }];
+  // Fetch doctors when specialty is selected
+  const handleSpecialtySelect = async (specialty) => {
+    setSelectedSpecialty(specialty.id);
+    setSelectedSpecialtyName(specialty.name);
+    setLoadingDoctors(true);
+    setStep(2);
+    try {
+      const data = await getDoctorsBySpecialty(specialty.name);
+      setDoctors(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des médecins:', error);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
 
+  const filteredDoctors = searchQuery
+    ? doctors.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : doctors;
 
   const generateCalendarDays = () => {
     const days = [];
@@ -125,22 +129,25 @@ export function BookingPage({ onBookingComplete }) {
                                 <p className="booking-subtitle">Choisissez le type de médecin dont vous avez besoin</p>
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
-                                <div className="booking-grid-3">
-                                    {specialties.map((specialty) =>
-                <button
-                  key={specialty.id}
-                  onClick={() => {
-                    setSelectedSpecialty(specialty.id);
-                    handleNext();
-                  }}
-                  className={`booking-specialty-btn ${selectedSpecialty === specialty.id ? 'selected' : ''}`}>
-                  
-                                            <div className="booking-specialty-icon">{specialty.icon}</div>
-                                            <h3 className="booking-specialty-name">{specialty.name}</h3>
-                                            <p className="booking-specialty-count">{specialty.count} médecins disponibles</p>
-                                        </button>
-                )}
-                                </div>
+                                {loadingSpecialties ? (
+                                    <p className="text-muted" style={{ textAlign: 'center', padding: '3rem 0' }}>
+                                        Chargement des spécialités...
+                                    </p>
+                                ) : (
+                                    <div className="booking-grid-3">
+                                        {specialties.map((specialty) =>
+                    <button
+                      key={specialty.id}
+                      onClick={() => handleSpecialtySelect(specialty)}
+                      className={`booking-specialty-btn ${selectedSpecialty === specialty.id ? 'selected' : ''}`}>
+                      
+                                                <div className="booking-specialty-icon">{specialty.icon}</div>
+                                                <h3 className="booking-specialty-name">{specialty.name}</h3>
+                                                <p className="booking-specialty-count">{specialty.count} médecins disponibles</p>
+                                            </button>
+                    )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -152,38 +159,53 @@ export function BookingPage({ onBookingComplete }) {
                         <div className={["card", "booking-card"].filter(Boolean).join(" ")}>
                             <div className={["card-header", "flex", "flex-col", "gap-2"].filter(Boolean).join(" ")}>
                                 <h3 className={["card-title", "booking-title"].filter(Boolean).join(" ")}>Choisissez votre médecin</h3>
-                                <p className="booking-subtitle">Sélectionnez parmi nos meilleurs spécialistes</p>
+                                <p className="booking-subtitle">Sélectionnez parmi nos meilleurs spécialistes en {selectedSpecialtyName}</p>
                                 <div className="booking-search-wrapper">
                                     <Search className="booking-search-icon" size={20} />
-                                    <input className={["input", "booking-search-input"].filter(Boolean).join(" ")} placeholder="Rechercher un médecin..." />
+                                    <input
+                                        className={["input", "booking-search-input"].filter(Boolean).join(" ")}
+                                        placeholder="Rechercher un médecin..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
                                 </div>
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
-                                <div className="booking-doctor-list">
-                                    {doctors.map((doctor) =>
-                <div
-                  key={doctor.id}
-                  onClick={() => {
-                    setSelectedDoctor(doctor.id);
-                    handleNext();
-                  }}
-                  className={`booking-doctor-card ${selectedDoctor === doctor.id ? 'selected' : ''}`}>
-                  
-                                            <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
-                                            <div className="booking-doctor-info">
-                                                <h3 className="booking-doctor-name">{doctor.name}</h3>
-                                                <p className="booking-doctor-specialty">{doctor.specialty}</p>
-                                                <div className="booking-doctor-stats">
+                                {loadingDoctors ? (
+                                    <p className="text-muted" style={{ textAlign: 'center', padding: '3rem 0' }}>
+                                        Chargement des médecins...
+                                    </p>
+                                ) : filteredDoctors.length > 0 ? (
+                                    <div className="booking-doctor-list">
+                                        {filteredDoctors.map((doctor) =>
+                    <div
+                      key={doctor.id}
+                      onClick={() => {
+                        setSelectedDoctor(doctor);
+                        handleNext();
+                      }}
+                      className={`booking-doctor-card ${selectedDoctor?.id === doctor.id ? 'selected' : ''}`}>
+                      
+                                                <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
+                                                <div className="booking-doctor-info">
+                                                    <h3 className="booking-doctor-name">{doctor.name}</h3>
+                                                    <p className="booking-doctor-specialty">{doctor.specialty}</p>
+                                                    <div className="booking-doctor-stats">
                           <span className="booking-doctor-rating">
                             ⭐ {doctor.rating} ({doctor.reviews} avis)
                           </span>
-                                                    <span className="text-muted">{doctor.experience} d'expérience</span>
+                                                        <span className="text-muted">{doctor.experience} d'expérience</span>
+                                                    </div>
                                                 </div>
+                                                <span className="badge badge-success">{doctor.availability}</span>
                                             </div>
-                                            <span className="badge badge-success">{doctor.availability}</span>
-                                        </div>
-                )}
-                                </div>
+                    )}
+                                    </div>
+                                ) : (
+                                    <p className="text-muted" style={{ textAlign: 'center', padding: '3rem 0' }}>
+                                        Aucun médecin trouvé.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -250,10 +272,10 @@ export function BookingPage({ onBookingComplete }) {
                                 <div className="booking-confirmation-container">
                                     <div className="booking-summary">
                                         <div className="booking-summary-doctor">
-                                            <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials("Dr. Sarah Johnson")}</div>
+                                            <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials(selectedDoctor?.name || '')}</div>
                                             <div>
-                                                <h3 className="booking-doctor-name">Dr. Sarah Johnson</h3>
-                                                <p className="booking-doctor-specialty">Cardiologue</p>
+                                                <h3 className="booking-doctor-name">{selectedDoctor?.name || ''}</h3>
+                                                <p className="booking-doctor-specialty">{selectedDoctor?.specialty || ''}</p>
                                             </div>
                                         </div>
                                         <div className="booking-grid-2 booking-summary-details">

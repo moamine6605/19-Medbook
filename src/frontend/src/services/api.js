@@ -125,4 +125,14 @@ export const getAdminActivity = async () => {
     return response.data;
 };
 
+export const getSpecialties = async () => {
+    const response = await api.get('/specialties');
+    return response.data;
+};
+
+export const getDoctorsBySpecialty = async (specialty) => {
+    const response = await api.get('/doctors', { params: { specialty } });
+    return response.data;
+};
+
 export default api;

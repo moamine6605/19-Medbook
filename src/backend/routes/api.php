@@ -12,6 +12,10 @@ use Illuminate\Http\Request;
 Route::get('/doctors/featured', [DoctorController::class, 'featured']);
 Route::get('/stats/public', [DoctorController::class, 'publicStats']);
 
+// Public routes for booking page
+Route::get('/specialties', [DoctorController::class, 'specialties']);
+Route::get('/doctors', [DoctorController::class, 'bySpecialty']);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
