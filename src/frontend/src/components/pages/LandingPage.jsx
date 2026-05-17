@@ -94,7 +94,7 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                         Dites adieu aux longues files d'attente. Prenez rendez-vous avec les meilleurs médecins en quelques secondes, gérez votre parcours de soins et concentrez-vous sur l'essentiel : votre santé.
                     </p>
                     <div className="landing-hero-actions">
-                        <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onGetStarted}>
+                        <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={isAuthenticated ? onGetStarted : onSignUpClick}>
                             <Calendar size={20} className="landing-hero-action-icon" />
                             Prendre rendez-vous
                         </button>
