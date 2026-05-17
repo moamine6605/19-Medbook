@@ -26,5 +26,8 @@ class DatabaseSeeder extends Seeder
 
         // Seed doctor user accounts and today's appointments
         $this->call(DoctorDataSeeder::class);
+
+        // Seed admin user account
+        $this->call(AdminSeeder::class);
     }
 }

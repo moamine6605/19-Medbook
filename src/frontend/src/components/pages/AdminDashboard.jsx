@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, DollarSign, Bell, MoreVertical } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Sidebar } from '../Sidebar.jsx';
+import { getAdminStats, getAdminAppointmentsAnalytics, getAdminRevenueAnalytics, getAdminTopDoctors, getAdminActivity } from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
 function getInitials(name = 'User') {
@@ -12,91 +13,72 @@ function getInitials(name = 'User') {
 
 export function AdminDashboard({ onLogout, user, onHomeClick }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [stats, setStats] = useState(null);
+  const [appointmentsData, setAppointmentsData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [topDoctors, setTopDoctors] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const userName = user?.name || 'Administrateur';
 
-  const stats = [
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsData, appointmentsRes, revenueRes, doctorsRes, activityRes] = await Promise.all([
+          getAdminStats(),
+          getAdminAppointmentsAnalytics(),
+          getAdminRevenueAnalytics(),
+          getAdminTopDoctors(),
+          getAdminActivity(),
+        ]);
+        setStats(statsData);
+        setAppointmentsData(appointmentsRes);
+        setRevenueData(revenueRes);
+        setTopDoctors(doctorsRes);
+        setRecentActivity(activityRes);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const statCards = [
   {
     title: 'Total des patients',
-    value: '12 458',
-    change: '+12.5%',
+    value: stats ? stats.total_patients : '...',
+    change: stats ? stats.patient_growth : '',
     icon: Users,
     color: 'var(--primary)',
     bgColor: 'rgba(37, 99, 235, 0.1)'
   },
   {
-    title: 'Rendez-vous aujourd\'hui',
-    value: '342',
-    change: '+5.2%',
+    title: "Rendez-vous aujourd'hui",
+    value: stats ? String(stats.today_appointments) : '...',
+    change: stats ? stats.appointment_growth : '',
     icon: Calendar,
     color: 'var(--secondary)',
     bgColor: 'rgba(6, 182, 212, 0.1)'
   },
   {
     title: 'Médecins actifs',
-    value: '89',
-    change: '+2',
+    value: stats ? String(stats.active_doctors) : '...',
+    change: stats ? stats.new_doctors : '',
     icon: TrendingUp,
     color: 'var(--success)',
     bgColor: 'rgba(16, 185, 129, 0.1)'
   },
   {
     title: 'Revenus',
-    value: '48,2k €',
-    change: '+18.3%',
+    value: stats ? stats.revenue : '...',
+    change: stats ? stats.revenue_growth : '',
     icon: DollarSign,
     color: 'var(--warning)',
     bgColor: 'rgba(245, 158, 11, 0.1)'
   }];
-
-
-  const appointmentsData = [
-  { month: 'Jan', appointments: 1200 },
-  { month: 'Fév', appointments: 1450 },
-  { month: 'Mar', appointments: 1800 },
-  { month: 'Avr', appointments: 1650 },
-  { month: 'Mai', appointments: 2100 },
-  { month: 'Juin', appointments: 2400 }];
-
-
-  const revenueData = [
-  { month: 'Jan', revenue: 32000 },
-  { month: 'Fév', revenue: 38000 },
-  { month: 'Mar', revenue: 42000 },
-  { month: 'Avr', revenue: 39000 },
-  { month: 'Mai', revenue: 45000 },
-  { month: 'Juin', revenue: 48200 }];
-
-
-  const topDoctors = [
-  {
-    name: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologue',
-    patients: 234,
-    rating: 4.9,
-    status: 'Actif'
-  },
-  {
-    name: 'Dr. Michael Chen',
-    specialty: 'Neurologue',
-    patients: 189,
-    rating: 4.8,
-    status: 'Actif'
-  },
-  {
-    name: 'Dr. Emily Williams',
-    specialty: 'Pédiatre',
-    patients: 312,
-    rating: 5.0,
-    status: 'Actif'
-  }];
-
-
-  const recentActivity = [
-  { action: 'Nouveau patient inscrit', user: 'Jean Dupont', time: 'Il y a 5 min' },
-  { action: 'Rendez-vous programmé', user: 'Dr. Sarah Johnson', time: 'Il y a 15 min' },
-  { action: 'Paiement reçu', user: 'Emily Davis', time: 'Il y a 1 heure' },
-  { action: 'Nouveau médecin ajouté', user: 'Dr. Michael Chen', time: 'Il y a 2 heures' }];
 
 
   return (
@@ -119,7 +101,7 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                 </div>
 
                 <div className="dashboard-stats-grid">
-                    {stats.map((stat) =>
+                    {statCards.map((stat) =>
           <div className={["card"].filter(Boolean).join(" ")} key={stat.title}>
                             <div className={["card-content", "dashboard-stat-card-content"].filter(Boolean).join(" ")}>
                                 <div>
@@ -142,15 +124,19 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                         </div>
                         <div className={["card-content"].filter(Boolean).join(" ")}>
                             <div style={{ width: '100%', height: '300px' }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={appointmentsData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                                        <XAxis dataKey="month" stroke="#64748B" />
-                                        <YAxis stroke="#64748B" />
-                                        <Tooltip />
-                                        <Bar dataKey="appointments" fill="var(--primary)" radius={[8, 8, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {loading ? (
+                                    <p className="text-muted" style={{ textAlign: 'center', paddingTop: '8rem' }}>Chargement...</p>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={appointmentsData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                                            <XAxis dataKey="month" stroke="#64748B" />
+                                            <YAxis stroke="#64748B" />
+                                            <Tooltip />
+                                            <Bar dataKey="appointments" fill="var(--primary)" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -161,15 +147,19 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                         </div>
                         <div className={["card-content"].filter(Boolean).join(" ")}>
                             <div style={{ width: '100%', height: '300px' }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={revenueData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                                        <XAxis dataKey="month" stroke="#64748B" />
-                                        <YAxis stroke="#64748B" />
-                                        <Tooltip />
-                                        <Line type="monotone" dataKey="revenue" stroke="var(--secondary)" strokeWidth={3} dot={{ fill: 'var(--secondary)', r: 5 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                                {loading ? (
+                                    <p className="text-muted" style={{ textAlign: 'center', paddingTop: '8rem' }}>Chargement...</p>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={revenueData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                                            <XAxis dataKey="month" stroke="#64748B" />
+                                            <YAxis stroke="#64748B" />
+                                            <Tooltip />
+                                            <Line type="monotone" dataKey="revenue" stroke="var(--secondary)" strokeWidth={3} dot={{ fill: 'var(--secondary)', r: 5 }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -183,48 +173,52 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                                 <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>Voir tout</button>
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
-                                <div className="dashboard-table-container">
-                                    <table className="dashboard-table">
-                                        <thead>
-                                        <tr>
-                                            <th>Médecin</th>
-                                            <th>Spécialité</th>
-                                            <th>Patients</th>
-                                            <th>Note</th>
-                                            <th>Statut</th>
-                                            <th></th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {topDoctors.map((doctor, index) =>
-                      <tr key={index}>
-                                                <td>
-                                                    <div className="dashboard-table-user">
-                                                        <div className={["avatar", "avatar-sm"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
-                                                        <span className="dashboard-table-user-name">{doctor.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="text-muted">{doctor.specialty}</td>
-                                                <td>{doctor.patients}</td>
-                                                <td>
-                                                    <div className="dashboard-actions-row">
-                                                        <span>⭐</span>
-                                                        <span>{doctor.rating}</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span className="badge badge-success">{doctor.status}</span>
-                                                </td>
-                                                <td>
-                                                    <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>
-                                                        <MoreVertical size={16} />
-                                                    </button>
-                                                </td>
+                                {loading ? (
+                                    <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+                                ) : (
+                                    <div className="dashboard-table-container">
+                                        <table className="dashboard-table">
+                                            <thead>
+                                            <tr>
+                                                <th>Médecin</th>
+                                                <th>Spécialité</th>
+                                                <th>Patients</th>
+                                                <th>Note</th>
+                                                <th>Statut</th>
+                                                <th></th>
                                             </tr>
-                      )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody>
+                                            {topDoctors.map((doctor) =>
+                          <tr key={doctor.id}>
+                                                    <td>
+                                                        <div className="dashboard-table-user">
+                                                            <div className={["avatar", "avatar-sm"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
+                                                            <span className="dashboard-table-user-name">{doctor.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-muted">{doctor.specialty}</td>
+                                                    <td>{doctor.patients}</td>
+                                                    <td>
+                                                        <div className="dashboard-actions-row">
+                                                            <span>⭐</span>
+                                                            <span>{doctor.rating}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`badge ${doctor.status === 'Actif' ? 'badge-success' : 'badge-default'}`}>{doctor.status}</span>
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>
+                                                            <MoreVertical size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                          )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -236,18 +230,24 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
                                 <div className="dashboard-activity-list">
-                                    {recentActivity.map((activity, index) =>
-                  <div key={index} className="dashboard-activity-item">
-                                            <div className="dashboard-activity-content">
-                                                <div className="dashboard-activity-dot"></div>
-                                                <div className="dashboard-activity-info">
-                                                    <h4 className="dashboard-activity-title">{activity.action}</h4>
-                                                    <p className="text-muted dashboard-activity-desc">{activity.user}</p>
-                                                    <p className="dashboard-activity-time">{activity.time}</p>
+                                    {loading ? (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+                                    ) : recentActivity.length > 0 ? (
+                                        recentActivity.map((activity, index) =>
+                                            <div key={index} className="dashboard-activity-item">
+                                                <div className="dashboard-activity-content">
+                                                    <div className="dashboard-activity-dot"></div>
+                                                    <div className="dashboard-activity-info">
+                                                        <h4 className="dashboard-activity-title">{activity.action}</h4>
+                                                        <p className="text-muted dashboard-activity-desc">{activity.user}</p>
+                                                        <p className="dashboard-activity-time">{activity.time}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                  )}
+                                        )
+                                    ) : (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Aucune activité récente.</p>
+                                    )}
                                 </div>
                                 <button type="button" className={["btn", "btn-ghost", "btn-full", "dashboard-margin-top"].filter(Boolean).join(" ")}>
                                     Voir toute l'activité

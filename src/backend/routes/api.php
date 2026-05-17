@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorDashboardController;
 use App\Http\Controllers\PatientController;
@@ -30,6 +31,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/doctor/appointments/today', [DoctorDashboardController::class, 'todayAppointments']);
     Route::get('/doctor/patients/recent', [DoctorDashboardController::class, 'recentPatients']);
     Route::get('/doctor/monthly-summary', [DoctorDashboardController::class, 'monthlySummary']);
+
+    // Admin dashboard routes
+    Route::get('/admin/stats', [AdminDashboardController::class, 'stats']);
+    Route::get('/admin/analytics/appointments', [AdminDashboardController::class, 'appointmentsAnalytics']);
+    Route::get('/admin/analytics/revenue', [AdminDashboardController::class, 'revenueAnalytics']);
+    Route::get('/admin/doctors/top', [AdminDashboardController::class, 'topDoctors']);
+    Route::get('/admin/activity', [AdminDashboardController::class, 'activity']);
 });
 
 Route::get('/status', function () {

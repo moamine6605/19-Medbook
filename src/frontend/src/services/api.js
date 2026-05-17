@@ -100,4 +100,29 @@ export const getDoctorMonthlySummary = async () => {
     return response.data;
 };
 
+export const getAdminStats = async () => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+};
+
+export const getAdminAppointmentsAnalytics = async () => {
+    const response = await api.get('/admin/analytics/appointments');
+    return response.data;
+};
+
+export const getAdminRevenueAnalytics = async () => {
+    const response = await api.get('/admin/analytics/revenue');
+    return response.data;
+};
+
+export const getAdminTopDoctors = async () => {
+    const response = await api.get('/admin/doctors/top');
+    return response.data;
+};
+
+export const getAdminActivity = async () => {
+    const response = await api.get('/admin/activity');
+    return response.data;
+};
+
 export default api;
