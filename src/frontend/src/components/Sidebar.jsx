@@ -5,10 +5,10 @@ import {
   User,
   LogOut,
   Users,
-  FileText,
   Activity } from
 'lucide-react';
 
+import { useLocation, useNavigate } from 'react-router';
 import '../styles/components/Sidebar.css';
 
 function getInitials(name = 'User') {
@@ -23,6 +23,8 @@ export function Sidebar({
   onLogout = () => {},
   onHomeClick = () => {}
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const userName = user?.name || 'Utilisateur';
 
   const patientMenuItems = [
@@ -41,11 +43,10 @@ export function Sidebar({
 
 
   const adminMenuItems = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-  { id: 'appointments', icon: Calendar, label: 'Tous les rendez-vous' },
-  { id: 'users', icon: Users, label: 'Utilisateurs' },
-  { id: 'doctors', icon: Activity, label: 'Médecins' },
-  { id: 'reports', icon: FileText, label: 'Rapports' }];
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord', to: '/admin/dashboard' },
+  { id: 'appointments', icon: Calendar, label: 'Tous les rendez-vous', to: '/admin/appointments' },
+  { id: 'patients', icon: Users, label: 'Patients', to: '/admin/patients' },
+  { id: 'doctors', icon: Activity, label: 'Médecins', to: '/admin/doctors' }];
 
 
   const menuItems = userRole === 'doctor' ?
@@ -79,12 +80,18 @@ export function Sidebar({
             <nav className="sidebar-nav">
                 {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = item.to ? location.pathname === item.to : activeTab === item.id;
 
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => {
+                if (item.to) {
+                  navigate(item.to);
+                } else {
+                  onTabChange(item.id);
+                }
+              }}
               className={`sidebar-item ${isActive ? 'active' : ''}`}>
               
                             <Icon size={20} />

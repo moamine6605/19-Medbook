@@ -7,6 +7,9 @@ import {PatientDashboard} from "./components/pages/PatientDashboard.jsx";
 import {BookingPage} from "./components/pages/BookingPage.jsx";
 import {DoctorDashboard} from "./components/pages/DoctorDashboard.jsx";
 import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
+import { AdminAppointmentsPage } from "./components/pages/admin/AdminAppointmentsPage.jsx";
+import { AdminPatientsPage } from "./components/pages/admin/AdminPatientsPage.jsx";
+import { AdminDoctorsPage } from "./components/pages/admin/AdminDoctorsPage.jsx";
 import { login, register, logout, getUser } from './services/api';
 
 
@@ -192,6 +195,36 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
             element={
               isAuthenticated && userRole === 'admin' ?
                   <AdminDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
+
+                  <Navigate to="/login" />
+
+            } />
+
+        <Route
+            path="/admin/appointments"
+            element={
+              isAuthenticated && userRole === 'admin' ?
+                  <AdminAppointmentsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
+
+                  <Navigate to="/login" />
+
+            } />
+
+        <Route
+            path="/admin/patients"
+            element={
+              isAuthenticated && userRole === 'admin' ?
+                  <AdminPatientsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
+
+                  <Navigate to="/login" />
+
+            } />
+
+        <Route
+            path="/admin/doctors"
+            element={
+              isAuthenticated && userRole === 'admin' ?
+                  <AdminDoctorsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
 

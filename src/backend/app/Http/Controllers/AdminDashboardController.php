@@ -8,6 +8,10 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
 
 class AdminDashboardController extends Controller
 {
@@ -24,6 +28,8 @@ class AdminDashboardController extends Controller
      */
     public function stats()
     {
+        $this->authorizeAdmin(request());
+
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
         $lastMonth = Carbon::now()->subMonth();
@@ -86,6 +92,8 @@ class AdminDashboardController extends Controller
      */
     public function appointmentsAnalytics()
     {
+        $this->authorizeAdmin(request());
+
         $data = [];
 
         for ($i = 5; $i >= 0; $i--) {
@@ -109,6 +117,8 @@ class AdminDashboardController extends Controller
      */
     public function revenueAnalytics()
     {
+        $this->authorizeAdmin(request());
+
         $data = [];
 
         for ($i = 5; $i >= 0; $i--) {
@@ -134,6 +144,8 @@ class AdminDashboardController extends Controller
      */
     public function topDoctors()
     {
+        $this->authorizeAdmin(request());
+
         $doctors = Doctor::select('doctors.*')
             ->selectSub(function ($query) {
                 $query->from('appointments')
@@ -162,6 +174,8 @@ class AdminDashboardController extends Controller
      */
     public function activity()
     {
+        $this->authorizeAdmin(request());
+
         $activities = collect();
 
         // Recent patient registrations
@@ -238,6 +252,300 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * List appointments (admin view) with search and date-range filters.
+     *
+     * Query params:
+     * - q: searches patient + doctor names
+     * - timing: upcoming|ended|all (default all)
+     * - range: day|week|month|all (default all)
+     * - date: YYYY-MM-DD anchor date for range filters (default today)
+     */
+    public function appointments(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $q = trim((string) $request->query('q', ''));
+        $timing = (string) $request->query('timing', 'all');
+        $range = (string) $request->query('range', 'all');
+        $anchor = (string) $request->query('date', Carbon::today()->toDateString());
+
+        $anchorDate = Carbon::parse($anchor);
+        $now = Carbon::now();
+
+        $query = Appointment::query()
+            ->with([
+                'patient:id,name',
+                'doctor:id,name,specialty,rating',
+            ]);
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->whereHas('patient', function ($p) use ($q) {
+                    $p->where('name', 'like', '%' . $q . '%');
+                })->orWhereHas('doctor', function ($d) use ($q) {
+                    $d->where('name', 'like', '%' . $q . '%');
+                });
+            });
+        }
+
+        if ($range !== 'all') {
+            if ($range === 'day') {
+                $start = $anchorDate->copy()->startOfDay();
+                $end = $anchorDate->copy()->endOfDay();
+            } elseif ($range === 'week') {
+                $start = $anchorDate->copy()->startOfWeek();
+                $end = $anchorDate->copy()->endOfWeek();
+            } elseif ($range === 'month') {
+                $start = $anchorDate->copy()->startOfMonth();
+                $end = $anchorDate->copy()->endOfMonth();
+            } else {
+                $start = null;
+                $end = null;
+            }
+
+            if ($start && $end) {
+                $query->whereBetween('date', [$start->toDateString(), $end->toDateString()]);
+            }
+        }
+
+        $appointments = $query
+            ->orderBy('date')
+            ->orderBy('time')
+            ->limit(500)
+            ->get()
+            ->map(function (Appointment $appointment) use ($now) {
+                $scheduledAt = null;
+                try {
+                    $scheduledAt = Carbon::parse($appointment->date->toDateString() . ' ' . ($appointment->time ?: '00:00:00'));
+                } catch (\Throwable $e) {
+                    $scheduledAt = Carbon::parse($appointment->date->toDateString());
+                }
+
+                $isEnded = in_array($appointment->status, ['completed', 'cancelled'], true) || $scheduledAt->isPast();
+
+                return [
+                    'id' => $appointment->id,
+                    'date' => $appointment->date?->toDateString(),
+                    'time' => $appointment->time,
+                    'status' => $appointment->status,
+                    'timing' => $isEnded ? 'ended' : 'upcoming',
+                    'type' => $appointment->type,
+                    'reason' => $appointment->reason,
+                    'patient' => $appointment->patient?->name ?? 'Patient',
+                    'doctor' => $appointment->doctor?->name ?? 'Médecin',
+                    'doctor_specialty' => $appointment->doctor?->specialty ?? '',
+                    'doctor_rating' => $appointment->doctor?->rating,
+                    'scheduled_at' => $scheduledAt->toIso8601String(),
+                ];
+            })
+            ->values();
+
+        if ($timing !== 'all') {
+            $appointments = $appointments->filter(fn ($a) => $a['timing'] === $timing)->values();
+        }
+
+        return response()->json($appointments);
+    }
+
+    /**
+     * List all patients (admin view).
+     *
+     * Query params:
+     * - q: searches name + email
+     */
+    public function patients(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $q = trim((string) $request->query('q', ''));
+
+        $select = ['id', 'name', 'email', 'birth_date', 'created_at'];
+        if (Schema::hasColumn('users', 'blood_type')) {
+            $select[] = 'blood_type';
+        }
+
+        $query = User::query()
+            ->where('role', 'patient')
+            ->select($select)
+            ->orderBy('name');
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', '%' . $q . '%')
+                    ->orWhere('email', 'like', '%' . $q . '%');
+            });
+        }
+
+        return response()->json(
+            $query->limit(1000)->get()->map(function (User $u) {
+                $payload = [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'birth_date' => $u->birth_date?->toDateString(),
+                    'created_at' => optional($u->created_at)->toDateString(),
+                ];
+
+                if (Schema::hasColumn('users', 'blood_type')) {
+                    $payload['blood_type'] = $u->blood_type;
+                } else {
+                    $payload['blood_type'] = null;
+                }
+
+                return [
+                    ...$payload,
+                ];
+            })->values()
+        );
+    }
+
+    /**
+     * List all doctors (admin view).
+     *
+     * Query params:
+     * - q: searches name
+     * - min_rating: float
+     */
+    public function doctors(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $q = trim((string) $request->query('q', ''));
+        $minRating = $request->query('min_rating', null);
+
+        $query = Doctor::query()
+            ->select(['id', 'name', 'specialty', 'rating', 'reviews', 'experience', 'user_id'])
+            ->orderByDesc('rating')
+            ->orderBy('name');
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%' . $q . '%');
+        }
+
+        if ($minRating !== null && is_numeric($minRating)) {
+            $query->where('rating', '>=', (float) $minRating);
+        }
+
+        return response()->json(
+            $query->limit(1000)->get()->map(function (Doctor $d) {
+                return [
+                    'id' => $d->id,
+                    'name' => $d->name,
+                    'specialty' => $d->specialty,
+                    'rating' => $d->rating,
+                    'reviews' => $d->reviews,
+                    'experience' => $d->experience,
+                    'status' => $d->user_id ? 'Actif' : 'Inactif',
+                ];
+            })->values()
+        );
+    }
+
+    public function storePatient(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'birth_date' => ['nullable', 'date'],
+        ];
+
+        // If the migration hasn't run yet, don't validate/accept this field to avoid 500s.
+        if (Schema::hasColumn('users', 'blood_type')) {
+            $rules['blood_type'] = ['nullable', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])];
+        }
+
+        $data = $request->validate($rules);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => 'patient',
+            'birth_date' => $data['birth_date'] ?? null,
+            'blood_type' => Schema::hasColumn('users', 'blood_type') ? ($data['blood_type'] ?? null) : null,
+        ]);
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'birth_date' => $user->birth_date,
+            'blood_type' => $user->blood_type,
+        ], Response::HTTP_CREATED);
+    }
+
+    public function storeDoctor(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'specialty' => ['required', 'string', 'max:255'],
+            'experience' => ['required', 'string', 'max:255'],
+            'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
+            'is_featured' => ['nullable', 'boolean'],
+        ]);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => 'doctor',
+        ]);
+
+        $doctor = Doctor::create([
+            'user_id' => $user->id,
+            'name' => $data['name'],
+            'specialty' => $data['specialty'],
+            'experience' => $data['experience'],
+            'rating' => $data['rating'] ?? 4.5,
+            'is_featured' => (bool) ($data['is_featured'] ?? false),
+        ]);
+
+        return response()->json([
+            'id' => $doctor->id,
+            'name' => $doctor->name,
+            'specialty' => $doctor->specialty,
+            'rating' => $doctor->rating,
+            'status' => 'Actif',
+        ], Response::HTTP_CREATED);
+    }
+
+    public function storeAppointment(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $data = $request->validate([
+            'patient_id' => ['required', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'patient'))],
+            'doctor_id' => ['required', 'integer', 'exists:doctors,id'],
+            'date' => ['required', 'date'],
+            'time' => ['required', 'string', 'regex:/^\\d{2}:\\d{2}$/'],
+            'status' => ['nullable', Rule::in(['upcoming', 'completed', 'cancelled', 'in-progress'])],
+            'type' => ['nullable', Rule::in(['in-person', 'video'])],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $appointment = Appointment::create([
+            'patient_id' => $data['patient_id'],
+            'doctor_id' => $data['doctor_id'],
+            'date' => Carbon::parse($data['date'])->toDateString(),
+            'time' => $data['time'],
+            'status' => $data['status'] ?? 'upcoming',
+            'type' => $data['type'] ?? 'in-person',
+            'reason' => $data['reason'] ?? null,
+        ]);
+
+        return response()->json([
+            'id' => $appointment->id,
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
      * Format a date as a human-readable "time ago" string in French.
      */
     private function timeAgo(Carbon $date): string
@@ -248,5 +556,13 @@ class AdminDashboardController extends Controller
         ]);
 
         return ucfirst($diff);
+    }
+
+    private function authorizeAdmin(Request $request): void
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'admin') {
+            abort(Response::HTTP_FORBIDDEN, 'Admin access required.');
+        }
     }
 }

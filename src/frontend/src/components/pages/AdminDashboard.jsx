@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, DollarSign, MoreVertical } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useNavigate } from 'react-router';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getAdminStats, getAdminAppointmentsAnalytics, getAdminRevenueAnalytics, getAdminTopDoctors, getAdminActivity } from '../../services/api';
+import { AdminCreateModal } from './admin/AdminCreateModal.jsx';
 import '../../styles/pages/Dashboard.css';
 
 function getInitials(name = 'User') {
@@ -20,6 +22,8 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
   const [topDoctors, setTopDoctors] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const userName = user?.name || 'Administrateur';
 
@@ -96,6 +100,12 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                     notifications={recentActivity.map((a, i) => ({ id: i, action: a.action, description: a.user, time: a.time }))}
                 />
 
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                    <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+                        Ajouter
+                    </button>
+                </div>
+
                 <div className="dashboard-stats-grid">
                     {statCards.map((stat) =>
           <div className={["card"].filter(Boolean).join(" ")} key={stat.title}>
@@ -166,7 +176,13 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                         <div className={["card"].filter(Boolean).join(" ")}>
                             <div className={["card-header", "flex", "flex-col", "gap-2", "dashboard-card-header-flex"].filter(Boolean).join(" ")}>
                                 <h3 className={["card-title"].filter(Boolean).join(" ")}>Meilleurs médecins</h3>
-                                <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>Voir tout</button>
+                                <button
+                                  type="button"
+                                  className={["btn", "btn-ghost"].filter(Boolean).join(" ")}
+                                  onClick={() => navigate('/admin/doctors')}
+                                >
+                                  Voir tout
+                                </button>
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
                                 {loading ? (
@@ -253,6 +269,8 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                     </div>
                 </div>
             </div>
+
+            <AdminCreateModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={() => {}} />
         </div>);
 
 }

@@ -126,6 +126,36 @@ export const getAdminActivity = async () => {
     return response.data;
 };
 
+export const getAdminAppointments = async ({ q = '', timing = 'all', range = 'all', date = '' } = {}) => {
+    const response = await api.get('/admin/appointments', { params: { q, timing, range, date } });
+    return response.data;
+};
+
+export const getAdminPatients = async ({ q = '' } = {}) => {
+    const response = await api.get('/admin/patients', { params: { q } });
+    return response.data;
+};
+
+export const getAdminDoctors = async ({ q = '', min_rating = '' } = {}) => {
+    const response = await api.get('/admin/doctors', { params: { q, min_rating } });
+    return response.data;
+};
+
+export const createAdminPatient = async (data) => {
+    const response = await api.post('/admin/patients', data);
+    return response.data;
+};
+
+export const createAdminDoctor = async (data) => {
+    const response = await api.post('/admin/doctors', data);
+    return response.data;
+};
+
+export const createAdminAppointment = async (data) => {
+    const response = await api.post('/admin/appointments', data);
+    return response.data;
+};
+
 export const getSpecialties = async () => {
     const response = await api.get('/specialties');
     return response.data;

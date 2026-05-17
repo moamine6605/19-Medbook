@@ -45,6 +45,8 @@ a {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  margin-left: 16rem; /* keep content visible when sidebar is fixed */
+  height: 100vh;
 }
 
 .max-w-7xl {
@@ -198,6 +200,10 @@ p { margin-bottom: 1rem; }
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
 }
 .sidebar-header {
   padding: 1.5rem;

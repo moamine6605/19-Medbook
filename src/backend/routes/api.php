@@ -45,6 +45,12 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/admin/analytics/revenue', [AdminDashboardController::class, 'revenueAnalytics']);
     Route::get('/admin/doctors/top', [AdminDashboardController::class, 'topDoctors']);
     Route::get('/admin/activity', [AdminDashboardController::class, 'activity']);
+    Route::get('/admin/appointments', [AdminDashboardController::class, 'appointments']);
+    Route::get('/admin/patients', [AdminDashboardController::class, 'patients']);
+    Route::get('/admin/doctors', [AdminDashboardController::class, 'doctors']);
+    Route::post('/admin/patients', [AdminDashboardController::class, 'storePatient']);
+    Route::post('/admin/doctors', [AdminDashboardController::class, 'storeDoctor']);
+    Route::post('/admin/appointments', [AdminDashboardController::class, 'storeAppointment']);
 });
 
 Route::get('/status', function () {
