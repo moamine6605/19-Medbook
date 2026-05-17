@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\PatientController;
 use Illuminate\Http\Request;
 
 // Public routes for landing page
@@ -17,6 +18,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // Patient dashboard routes
+    Route::get('/patient/stats', [PatientController::class, 'stats']);
+    Route::get('/patient/appointments', [PatientController::class, 'appointments']);
+    Route::get('/patient/activity', [PatientController::class, 'activity']);
 });
 
 Route::get('/status', function () {

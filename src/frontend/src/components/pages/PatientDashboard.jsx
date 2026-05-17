@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, TrendingUp, Heart, Plus, Bell, Search } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
+import { getPatientStats, getPatientAppointments, getPatientActivity } from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
 function getInitials(name = 'User') {
@@ -12,88 +13,61 @@ function getInitials(name = 'User') {
 
 export function PatientDashboard({ onLogout, user, onHomeClick }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [stats, setStats] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const userName = user?.name || 'Utilisateur';
 
-  const stats = [
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsData, appointmentsData, activityData] = await Promise.all([
+          getPatientStats(),
+          getPatientAppointments(),
+          getPatientActivity(),
+        ]);
+        setStats(statsData);
+        setAppointments(appointmentsData);
+        setActivities(activityData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const statCards = [
   {
     title: 'Rendez-vous à venir',
-    value: '3',
+    value: stats ? String(stats.upcoming_appointments) : '...',
     icon: Calendar,
     color: 'var(--primary)',
     bgColor: 'rgba(37, 99, 235, 0.1)'
   },
   {
     title: 'Visites terminées',
-    value: '12',
+    value: stats ? String(stats.completed_visits) : '...',
     icon: Clock,
     color: 'var(--success)',
     bgColor: 'rgba(16, 185, 129, 0.1)'
   },
   {
     title: 'Score de santé',
-    value: '92%',
+    value: stats ? stats.health_score + '%' : '...',
     icon: TrendingUp,
     color: 'var(--secondary)',
     bgColor: 'rgba(6, 182, 212, 0.1)'
   },
   {
     title: 'Ordonnances actives',
-    value: '2',
+    value: stats ? String(stats.active_prescriptions) : '...',
     icon: Heart,
     color: 'var(--warning)',
     bgColor: 'rgba(245, 158, 11, 0.1)'
-  }];
-
-
-  const upcomingAppointments = [
-  {
-    id: '1',
-    doctor: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologue',
-    date: '2026-05-18',
-    time: '10:00',
-    status: 'upcoming',
-    type: 'in-person'
-  },
-  {
-    id: '2',
-    doctor: 'Dr. Michael Chen',
-    specialty: 'Neurologue',
-    date: '2026-05-22',
-    time: '14:30',
-    status: 'upcoming',
-    type: 'video'
-  },
-  {
-    id: '3',
-    doctor: 'Dr. Emily Williams',
-    specialty: 'Pédiatre',
-    date: '2026-05-25',
-    time: '11:00',
-    status: 'upcoming',
-    type: 'in-person'
-  }];
-
-
-  const recentActivity = [
-  {
-    action: 'Rendez-vous pris',
-    description: 'Dr. Sarah Johnson - 18 Mai 2026',
-    time: 'Il y a 2 heures',
-    type: 'appointment'
-  },
-  {
-    action: 'Résultats de laboratoire',
-    description: 'Résultats du test sanguin prêts',
-    time: 'Il y a 1 jour',
-    type: 'results'
-  },
-  {
-    action: 'Ordonnance renouvelée',
-    description: 'Médicaments expédiés',
-    time: 'Il y a 3 jours',
-    type: 'prescription'
   }];
 
 
@@ -117,7 +91,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                 </div>
 
                 <div className="dashboard-stats-grid-2">
-                    {stats.map((stat) =>
+                    {statCards.map((stat) =>
           <div className={["card"].filter(Boolean).join(" ")} key={stat.title}>
                             <div className={["card-content", "dashboard-stat-card-content"].filter(Boolean).join(" ")}>
                                 <div>
@@ -144,26 +118,36 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
                                 <div className="dashboard-appointment-list">
-                                    {upcomingAppointments.map((appointment) =>
-                  <div key={appointment.id} className="dashboard-appointment-item">
-                                            <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials(appointment.doctor)}</div>
-                                            <div className="dashboard-appointment-info">
-                                                <div className="dashboard-appointment-header">
-                                                    <h4 className="dashboard-appointment-doctor">{appointment.doctor}</h4>
-                                                    <span className="badge badge-primary">{appointment.type === 'video' ? '📹 Vidéo' : '🏥 En personne'}</span>
+                                    {loading ? (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                            Chargement des rendez-vous...
+                                        </p>
+                                    ) : appointments.length > 0 ? (
+                                        appointments.map((appointment) =>
+                                            <div key={appointment.id} className="dashboard-appointment-item">
+                                                <div className={["avatar", "avatar-lg"].filter(Boolean).join(" ")}>{getInitials(appointment.doctor)}</div>
+                                                <div className="dashboard-appointment-info">
+                                                    <div className="dashboard-appointment-header">
+                                                        <h4 className="dashboard-appointment-doctor">{appointment.doctor}</h4>
+                                                        <span className="badge badge-primary">{appointment.type === 'video' ? '📹 Vidéo' : '🏥 En personne'}</span>
+                                                    </div>
+                                                    <p className="text-muted dashboard-appointment-specialty">{appointment.specialty}</p>
+                                                    <div className="dashboard-appointment-meta">
+                                                        <span className="dashboard-appointment-meta-item"><Calendar size={14} /> {appointment.date}</span>
+                                                        <span className="dashboard-appointment-meta-item"><Clock size={14} /> {appointment.time}</span>
+                                                    </div>
                                                 </div>
-                                                <p className="text-muted dashboard-appointment-specialty">{appointment.specialty}</p>
-                                                <div className="dashboard-appointment-meta">
-                                                    <span className="dashboard-appointment-meta-item"><Calendar size={14} /> {appointment.date}</span>
-                                                    <span className="dashboard-appointment-meta-item"><Clock size={14} /> {appointment.time}</span>
+                                                <div className="dashboard-appointment-actions">
+                                                    <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>Reporter</button>
+                                                    <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>Annuler</button>
                                                 </div>
                                             </div>
-                                            <div className="dashboard-appointment-actions">
-                                                <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>Reporter</button>
-                                                <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>Annuler</button>
-                                            </div>
-                                        </div>
-                  )}
+                                        )
+                                    ) : (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                            Aucun rendez-vous à venir.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -210,18 +194,28 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
                                 <div className="dashboard-activity-list">
-                                    {recentActivity.map((activity, index) =>
-                  <div key={index} className="dashboard-activity-item">
-                                            <div className="dashboard-activity-content">
-                                                <div className="dashboard-activity-dot"></div>
-                                                <div className="dashboard-activity-info">
-                                                    <h4 className="dashboard-activity-title">{activity.action}</h4>
-                                                    <p className="text-muted dashboard-activity-desc">{activity.description}</p>
-                                                    <p className="dashboard-activity-time">{activity.time}</p>
+                                    {loading ? (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                            Chargement...
+                                        </p>
+                                    ) : activities.length > 0 ? (
+                                        activities.map((activity) =>
+                                            <div key={activity.id} className="dashboard-activity-item">
+                                                <div className="dashboard-activity-content">
+                                                    <div className="dashboard-activity-dot"></div>
+                                                    <div className="dashboard-activity-info">
+                                                        <h4 className="dashboard-activity-title">{activity.action}</h4>
+                                                        <p className="text-muted dashboard-activity-desc">{activity.description}</p>
+                                                        <p className="dashboard-activity-time">{activity.time}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                  )}
+                                        )
+                                    ) : (
+                                        <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                            Aucune activité récente.
+                                        </p>
+                                    )}
                                 </div>
                                 <button type="button" className={["btn", "btn-ghost", "btn-full", "dashboard-margin-top"].filter(Boolean).join(" ")}>
                                     Voir toute l'activité

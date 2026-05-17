@@ -20,5 +20,8 @@ class DatabaseSeeder extends Seeder
 
         // Seed 1000 patient users
         $this->call(PatientSeeder::class);
+
+        // Seed appointments, prescriptions, and activities for patients
+        $this->call(PatientDataSeeder::class);
     }
 }

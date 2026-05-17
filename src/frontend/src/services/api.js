@@ -65,4 +65,19 @@ export const getPublicStats = async () => {
     return response.data;
 };
 
+export const getPatientStats = async () => {
+    const response = await api.get('/patient/stats');
+    return response.data;
+};
+
+export const getPatientAppointments = async () => {
+    const response = await api.get('/patient/appointments');
+    return response.data;
+};
+
+export const getPatientActivity = async () => {
+    const response = await api.get('/patient/activity');
+    return response.data;
+};
+
 export default api;
