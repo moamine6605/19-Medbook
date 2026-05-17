@@ -55,4 +55,14 @@ export const getUser = async () => {
     return response.data;
 };
 
+export const getFeaturedDoctors = async () => {
+    const response = await api.get('/doctors/featured');
+    return response.data;
+};
+
+export const getPublicStats = async () => {
+    const response = await api.get('/stats/public');
+    return response.data;
+};
+
 export default api;

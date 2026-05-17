@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Calendar,
   Clock,
@@ -8,14 +9,42 @@ import {
 import '../../styles/pages/LandingPage.css';
 
 import { Navbar } from "../Navbar.jsx";
+import { getFeaturedDoctors, getPublicStats } from '../../services/api';
 
 function getInitials(name = 'User') {
   return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
 }
 
-
+function formatCount(num) {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K+';
+  }
+  return num + '+';
+}
 
 export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, user, onLogout }) {
+  const [doctors, setDoctors] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [doctorsData, statsData] = await Promise.all([
+          getFeaturedDoctors(),
+          getPublicStats(),
+        ]);
+        setDoctors(doctorsData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const features = [
   {
     icon: Calendar,
@@ -36,30 +65,6 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
     icon: Users,
     title: 'Les meilleurs médecins',
     description: 'Accédez à un réseau de professionnels de la santé vérifiés et expérimentés.'
-  }];
-
-
-  const doctors = [
-  {
-    name: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologue',
-    rating: 4.9,
-    reviews: 234,
-    experience: '15 ans'
-  },
-  {
-    name: 'Dr. Michael Chen',
-    specialty: 'Neurologue',
-    rating: 4.8,
-    reviews: 189,
-    experience: '12 ans'
-  },
-  {
-    name: 'Dr. Emily Williams',
-    specialty: 'Pédiatre',
-    rating: 5.0,
-    reviews: 312,
-    experience: '10 ans'
   }];
 
 
@@ -97,15 +102,21 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
 
                     <div className="landing-stats-grid">
                         <div>
-                            <p className="landing-stat-value">500+</p>
+                            <p className="landing-stat-value">
+                                {stats ? formatCount(stats.doctors_count) : '...'}
+                            </p>
                             <p className="text-muted landing-stat-label">Médecins vérifiés</p>
                         </div>
                         <div>
-                            <p className="landing-stat-value">50K+</p>
+                            <p className="landing-stat-value">
+                                {stats ? formatCount(stats.patients_count) : '...'}
+                            </p>
                             <p className="text-muted landing-stat-label">Patients satisfaits</p>
                         </div>
                         <div>
-                            <p className="landing-stat-value">4.9★</p>
+                            <p className="landing-stat-value">
+                                {stats ? stats.average_rating + '★' : '...'}
+                            </p>
                             <p className="text-muted landing-stat-label">Note moyenne</p>
                         </div>
                     </div>
@@ -141,24 +152,34 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                         <p className="text-muted">Des médecins vérifiés et expérimentés prêts à vous aider.</p>
                     </div>
                     <div className="landing-doctors-grid">
-                        {doctors.map((doctor) =>
-            <div className={["card"].filter(Boolean).join(" ")} key={doctor.name}>
-                                <div className={["card-content", "landing-doctor-card-content"].filter(Boolean).join(" ")}>
-                                    <div className={["avatar", "avatar-lg", "landing-doctor-avatar"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
-                                    <h3 className="landing-doctor-name">{doctor.name}</h3>
-                                    <div className="landing-doctor-specialty">
-                                        <span className="badge badge-default">{doctor.specialty}</span>
+                        {loading ? (
+                            <p className="text-muted" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>
+                                Chargement des médecins...
+                            </p>
+                        ) : doctors.length > 0 ? (
+                            doctors.map((doctor) =>
+                                <div className={["card"].filter(Boolean).join(" ")} key={doctor.id}>
+                                    <div className={["card-content", "landing-doctor-card-content"].filter(Boolean).join(" ")}>
+                                        <div className={["avatar", "avatar-lg", "landing-doctor-avatar"].filter(Boolean).join(" ")}>{getInitials(doctor.name)}</div>
+                                        <h3 className="landing-doctor-name">{doctor.name}</h3>
+                                        <div className="landing-doctor-specialty">
+                                            <span className="badge badge-default">{doctor.specialty}</span>
+                                        </div>
+                                        <div className="landing-doctor-rating-container">
+                                            <Star color="var(--warning)" fill="var(--warning)" size={16} />
+                                            <span className="landing-doctor-rating">{doctor.rating}</span>
+                                            <span className="text-muted">({doctor.reviews} avis)</span>
+                                        </div>
+                                        <p className="text-muted landing-doctor-experience">Expérience : {doctor.experience}</p>
+                                        <button type="button" className={["btn", "btn-outline", "btn-full"].filter(Boolean).join(" ")}>Voir le profil</button>
                                     </div>
-                                    <div className="landing-doctor-rating-container">
-                                        <Star color="var(--warning)" fill="var(--warning)" size={16} />
-                                        <span className="landing-doctor-rating">{doctor.rating}</span>
-                                        <span className="text-muted">({doctor.reviews} avis)</span>
-                                    </div>
-                                    <p className="text-muted landing-doctor-experience">Expérience : {doctor.experience}</p>
-                                    <button type="button" className={["btn", "btn-outline", "btn-full"].filter(Boolean).join(" ")}>Voir le profil</button>
                                 </div>
-                            </div>
-            )}
+                            )
+                        ) : (
+                            <p className="text-muted" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>
+                                Aucun médecin disponible pour le moment.
+                            </p>
+                        )}
                     </div>
                 </div>
             </section>
