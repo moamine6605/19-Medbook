@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
 import {LandingPage} from "./components/pages/LandingPage.jsx";
 import {LoginPage} from "./components/pages/LoginPage.jsx";
@@ -7,6 +7,7 @@ import {PatientDashboard} from "./components/pages/PatientDashboard.jsx";
 import {BookingPage} from "./components/pages/BookingPage.jsx";
 import {DoctorDashboard} from "./components/pages/DoctorDashboard.jsx";
 import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
+import { login, register, logout, getUser } from './services/api';
 
 
 
@@ -29,38 +30,47 @@ function App() {
 function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole }) {
   const navigate = useNavigate();
 
-  const handleLogin = (email, password) => {
-    // Demo login logic - check email to determine role
-    if (email.includes('patient')) {
-      setUserRole('patient');
-    } else if (email.includes('doctor')) {
-      setUserRole('doctor');
-    } else if (email.includes('admin')) {
-      setUserRole('admin');
-    } else {
-      // Default to patient role
-      setUserRole('patient');
-    }
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const user = await getUser();
+          setIsAuthenticated(true);
+          setUserRole(user.role);
+        } catch (error) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+    };
+    initAuth();
+  }, [setIsAuthenticated, setUserRole]);
+
+  const handleLogin = async (email, password) => {
+    const data = await login(email, password);
     setIsAuthenticated(true);
+    setUserRole(data.user.role);
 
     // Navigate based on role
-    if (email.includes('doctor')) {
+    if (data.user.role === 'doctor') {
       navigate('/doctor/dashboard');
-    } else if (email.includes('admin')) {
+    } else if (data.user.role === 'admin') {
       navigate('/admin/dashboard');
     } else {
       navigate('/patient/dashboard');
     }
   };
 
-  const handleRegister = (data) => {
-    // Demo registration - default to patient
-    setUserRole('patient');
+  const handleRegister = async (data) => {
+    const res = await register(data.fullName, data.email, data.password);
+    setUserRole(res.user.role);
     setIsAuthenticated(true);
     navigate('/patient/dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     setIsAuthenticated(false);
     setUserRole(null);
     navigate('/');
@@ -127,7 +137,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/patient/dashboard"
             element={
               isAuthenticated && userRole === 'patient' ?
-                  <PatientDashboard /> :
+                  <PatientDashboard onLogout={handleLogout} /> :
 
                   <Navigate to="/login" />
 
@@ -139,7 +149,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/doctor/dashboard"
             element={
               isAuthenticated && userRole === 'doctor' ?
-                  <DoctorDashboard /> :
+                  <DoctorDashboard onLogout={handleLogout} /> :
 
                   <Navigate to="/login" />
 
@@ -151,7 +161,7 @@ function AppRoutes({ isAuthenticated, userRole, setIsAuthenticated, setUserRole 
             path="/admin/dashboard"
             element={
               isAuthenticated && userRole === 'admin' ?
-                  <AdminDashboard /> :
+                  <AdminDashboard onLogout={handleLogout} /> :
 
                   <Navigate to="/login" />
 

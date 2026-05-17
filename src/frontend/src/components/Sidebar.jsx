@@ -20,7 +20,8 @@ export function Sidebar({
   activeTab = 'dashboard',
   onTabChange = () => {},
   userRole = 'patient',
-  userName = 'John Doe'
+  userName = 'John Doe',
+  onLogout = () => {}
 }) {
   const patientMenuItems = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
@@ -97,7 +98,7 @@ export function Sidebar({
                     <Settings size={20} />
                     <span>Paramètres</span>
                 </button>
-                <button className="sidebar-item sidebar-logout-btn">
+                <button className="sidebar-item sidebar-logout-btn" onClick={onLogout}>
                     <LogOut size={20} />
                     <span>Se déconnecter</span>
                 </button>

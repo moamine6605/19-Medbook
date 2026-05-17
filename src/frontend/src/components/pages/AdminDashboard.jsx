@@ -10,7 +10,7 @@ function getInitials(name = 'User') {
 
 
 
-export function AdminDashboard() {
+export function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const stats = [
@@ -99,7 +99,7 @@ export function AdminDashboard() {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" userName="Administrateur" />
+            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" userName="Administrateur" onLogout={onLogout} />
 
             <div className="main-content">
                 <div className="dashboard-header">

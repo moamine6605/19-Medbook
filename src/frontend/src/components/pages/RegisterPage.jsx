@@ -16,7 +16,7 @@ export function RegisterPage({ onRegister, onLoginClick }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -35,7 +35,11 @@ export function RegisterPage({ onRegister, onLoginClick }) {
       return;
     }
 
-    onRegister?.(formData);
+    try {
+        await onRegister?.(formData);
+    } catch (err) {
+        setError(err.response?.data?.message || 'Erreur lors de la création du compte');
+    }
   };
 
   const updateField = (field, value) => {

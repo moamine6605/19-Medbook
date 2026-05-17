@@ -11,7 +11,7 @@ export function LoginPage({ onLogin, onSignUpClick }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -20,7 +20,11 @@ export function LoginPage({ onLogin, onSignUpClick }) {
       return;
     }
 
-    onLogin?.(email, password);
+    try {
+        await onLogin?.(email, password);
+    } catch (err) {
+        setError(err.response?.data?.message || 'Identifiants invalides');
+    }
   };
 
   return (

@@ -56,6 +56,8 @@ src/backend/composer.phar
 src/backend/.env
 src/backend/.env.*
 !src/backend/.env.example
+src/backend/.claude/
+src/backend/.claude/*
 src/backend/.phpunit.result.cache
 src/backend/.phpunit.cache/
 src/backend/.pint.cache
