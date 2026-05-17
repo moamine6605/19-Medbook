@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, TrendingUp, Heart, Plus, Bell, Search } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, Heart, Plus, Search } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
+import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getPatientStats, getPatientAppointments, getPatientActivity } from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
@@ -11,7 +12,7 @@ function getInitials(name = 'User') {
 
 
 
-export function PatientDashboard({ onLogout, user, onHomeClick }) {
+export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -39,6 +40,20 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
     };
     fetchData();
   }, []);
+
+  // Handle sidebar tab changes
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'appointments') {
+      onNavigate?.('/booking');
+    } else if (tabId === 'history') {
+      // Stay on dashboard, scroll to activity section
+      setActiveTab('dashboard');
+    } else if (tabId === 'profile') {
+      // Stay on dashboard for now
+      setActiveTab('dashboard');
+    }
+  };
 
   const statCards = [
   {
@@ -73,22 +88,17 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="patient" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+            <Sidebar activeTab={activeTab} onTabChange={handleTabChange} userRole="patient" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
-                <div className="dashboard-header">
-                    <div>
-                        <h1 className="dashboard-title">Tableau de bord</h1>
-                        <p className="text-muted">Bon retour, {userName.split(' ')[0]} !</p>
-                    </div>
-                    <div className="dashboard-user-actions">
-                        <button type="button" className={["btn", "btn-ghost", "dashboard-bell-btn"].filter(Boolean).join(" ")}>
-                            <Bell size={20} />
-                            <span className="dashboard-notification-dot"></span>
-                        </button>
-                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials(userName)}</div>
-                    </div>
-                </div>
+                <DashboardHeader
+                    title="Tableau de bord"
+                    subtitle={`Bon retour, ${userName.split(' ')[0]} !`}
+                    user={user}
+                    onLogout={onLogout}
+                    onHomeClick={onHomeClick}
+                    notifications={activities}
+                />
 
                 <div className="dashboard-stats-grid-2">
                     {statCards.map((stat) =>
@@ -111,7 +121,11 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                         <div className={["card", "dashboard-margin-bottom"].filter(Boolean).join(" ")}>
                             <div className={["card-header", "flex", "flex-col", "gap-2", "dashboard-card-header-flex"].filter(Boolean).join(" ")}>
                                 <h3 className={["card-title"].filter(Boolean).join(" ")}>Rendez-vous à venir</h3>
-                                <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")}>
+                                <button
+                                    type="button"
+                                    className={["btn", "btn-primary"].filter(Boolean).join(" ")}
+                                    onClick={() => onNavigate?.('/booking')}
+                                >
                                     <Plus size={16} className="dashboard-btn-icon" />
                                     Nouveau
                                 </button>
@@ -138,8 +152,19 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                                                     </div>
                                                 </div>
                                                 <div className="dashboard-appointment-actions">
-                                                    <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>Reporter</button>
-                                                    <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")}>Annuler</button>
+                                                    <button
+                                                        type="button"
+                                                        className={["btn", "btn-outline"].filter(Boolean).join(" ")}
+                                                        onClick={() => onNavigate?.('/booking')}
+                                                    >Reporter</button>
+                                                    <button
+                                                        type="button"
+                                                        className={["btn", "btn-ghost"].filter(Boolean).join(" ")}
+                                                        onClick={() => {
+                                                            // For now just visually remove the appointment
+                                                            setAppointments(prev => prev.filter(a => a.id !== appointment.id));
+                                                        }}
+                                                    >Annuler</button>
                                                 </div>
                                             </div>
                                         )
@@ -158,25 +183,25 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                             </div>
                             <div className={["card-content"].filter(Boolean).join(" ")}>
                                 <div className="dashboard-actions-grid">
-                                    <button className="dashboard-action-btn">
+                                    <button className="dashboard-action-btn" onClick={() => onNavigate?.('/booking')}>
                                         <div className="dashboard-action-icon-wrapper" style={{ backgroundColor: 'rgba(37, 99, 235, 0.1)' }}>
                                             <Calendar color="var(--primary)" size={24} />
                                         </div>
                                         <span className="dashboard-action-label">Prendre rendez-vous</span>
                                     </button>
-                                    <button className="dashboard-action-btn">
+                                    <button className="dashboard-action-btn" onClick={() => onNavigate?.('/booking')}>
                                         <div className="dashboard-action-icon-wrapper" style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)' }}>
                                             <Search color="var(--secondary)" size={24} />
                                         </div>
                                         <span className="dashboard-action-label">Trouver un médecin</span>
                                     </button>
-                                    <button className="dashboard-action-btn">
+                                    <button className="dashboard-action-btn" onClick={() => onNavigate?.('/patient/dashboard')}>
                                         <div className="dashboard-action-icon-wrapper" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
                                             <Heart color="var(--success)" size={24} />
                                         </div>
                                         <span className="dashboard-action-label">Dossiers médicaux</span>
                                     </button>
-                                    <button className="dashboard-action-btn">
+                                    <button className="dashboard-action-btn" onClick={() => onNavigate?.('/patient/dashboard')}>
                                         <div className="dashboard-action-icon-wrapper" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
                                             <Clock color="var(--warning)" size={24} />
                                         </div>
@@ -217,7 +242,11 @@ export function PatientDashboard({ onLogout, user, onHomeClick }) {
                                         </p>
                                     )}
                                 </div>
-                                <button type="button" className={["btn", "btn-ghost", "btn-full", "dashboard-margin-top"].filter(Boolean).join(" ")}>
+                                <button
+                                    type="button"
+                                    className={["btn", "btn-ghost", "btn-full", "dashboard-margin-top"].filter(Boolean).join(" ")}
+                                    onClick={() => onNavigate?.('/patient/dashboard')}
+                                >
                                     Voir toute l'activité
                                 </button>
                             </div>

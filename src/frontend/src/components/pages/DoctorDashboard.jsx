@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, TrendingUp, Bell, Video, MapPin } from 'lucide-react';
+import { Calendar, Clock, Users, TrendingUp, Video, MapPin } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
+import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getDoctorStats, getDoctorTodayAppointments, getDoctorRecentPatients, getDoctorMonthlySummary } from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
@@ -83,19 +84,14 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
             <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="doctor" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
-                <div className="dashboard-header">
-                    <div>
-                        <h1 className="dashboard-title">Tableau de bord du médecin</h1>
-                        <p className="text-muted">Bonjour, {userName} !</p>
-                    </div>
-                    <div className="dashboard-user-actions">
-                        <button type="button" className={["btn", "btn-ghost", "dashboard-bell-btn"].filter(Boolean).join(" ")}>
-                            <Bell size={20} />
-                            <span className="dashboard-notification-dot"></span>
-                        </button>
-                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials(userName)}</div>
-                    </div>
-                </div>
+                <DashboardHeader
+                    title="Tableau de bord du médecin"
+                    subtitle={`Bonjour, ${userName} !`}
+                    user={user}
+                    onLogout={onLogout}
+                    onHomeClick={onHomeClick}
+                    notifications={todayAppointments.map(a => ({ id: a.id, action: `${a.patient} - ${a.time}`, description: a.reason, time: a.status === 'completed' ? 'Terminé' : a.status === 'in-progress' ? 'En cours' : 'À venir' }))}
+                />
 
                 <div className="dashboard-stats-grid">
                     {statCards.map((stat) =>

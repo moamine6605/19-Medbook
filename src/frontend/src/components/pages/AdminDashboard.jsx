@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, Calendar, TrendingUp, DollarSign, Bell, MoreVertical } from 'lucide-react';
+import { Users, Calendar, TrendingUp, DollarSign, MoreVertical } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Sidebar } from '../Sidebar.jsx';
+import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getAdminStats, getAdminAppointmentsAnalytics, getAdminRevenueAnalytics, getAdminTopDoctors, getAdminActivity } from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
@@ -86,19 +87,14 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
             <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
-                <div className="dashboard-header">
-                    <div>
-                        <h1 className="dashboard-title">Tableau de bord administrateur</h1>
-                        <p className="text-muted">Bienvenue, {userName}</p>
-                    </div>
-                    <div className="dashboard-user-actions">
-                        <button type="button" className={["btn", "btn-ghost", "dashboard-bell-btn"].filter(Boolean).join(" ")}>
-                            <Bell size={20} />
-                            <span className="dashboard-notification-dot"></span>
-                        </button>
-                        <div className={["avatar", "avatar-md"].filter(Boolean).join(" ")}>{getInitials(userName)}</div>
-                    </div>
-                </div>
+                <DashboardHeader
+                    title="Tableau de bord administrateur"
+                    subtitle={`Bienvenue, ${userName}`}
+                    user={user}
+                    onLogout={onLogout}
+                    onHomeClick={onHomeClick}
+                    notifications={recentActivity.map((a, i) => ({ id: i, action: a.action, description: a.user, time: a.time }))}
+                />
 
                 <div className="dashboard-stats-grid">
                     {statCards.map((stat) =>

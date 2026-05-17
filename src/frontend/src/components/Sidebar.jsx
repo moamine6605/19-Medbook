@@ -3,7 +3,6 @@ import {
   Calendar,
   Clock,
   User,
-  Settings,
   LogOut,
   Users,
   FileText,
@@ -97,10 +96,6 @@ export function Sidebar({
 
             {/* Bottom Actions */}
             <div className="sidebar-footer">
-                <button className="sidebar-item">
-                    <Settings size={20} />
-                    <span>Paramètres</span>
-                </button>
                 <button className="sidebar-item sidebar-logout-btn" onClick={onLogout}>
                     <LogOut size={20} />
                     <span>Se déconnecter</span>

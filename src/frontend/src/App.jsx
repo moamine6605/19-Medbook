@@ -167,7 +167,7 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
             path="/patient/dashboard"
             element={
               isAuthenticated && userRole === 'patient' ?
-                  <PatientDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
+                  <PatientDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} onNavigate={(path) => navigate(path)} /> :
 
                   <Navigate to="/login" />
 
