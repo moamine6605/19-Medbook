@@ -80,4 +80,24 @@ export const getPatientActivity = async () => {
     return response.data;
 };
 
+export const getDoctorStats = async () => {
+    const response = await api.get('/doctor/stats');
+    return response.data;
+};
+
+export const getDoctorTodayAppointments = async () => {
+    const response = await api.get('/doctor/appointments/today');
+    return response.data;
+};
+
+export const getDoctorRecentPatients = async () => {
+    const response = await api.get('/doctor/patients/recent');
+    return response.data;
+};
+
+export const getDoctorMonthlySummary = async () => {
+    const response = await api.get('/doctor/monthly-summary');
+    return response.data;
+};
+
 export default api;
