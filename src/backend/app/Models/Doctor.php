@@ -17,6 +17,9 @@ class Doctor extends Model
         'rating',
         'reviews',
         'experience',
+        'phone',
+        'address',
+        'bio',
         'is_featured',
         'user_id',
     ];

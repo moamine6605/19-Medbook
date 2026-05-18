@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorDashboardController;
+use App\Http\Controllers\DoctorAvailabilityController;
+use App\Http\Controllers\DoctorSelfController;
 use App\Http\Controllers\PatientController;
 use Illuminate\Http\Request;
 
@@ -16,14 +18,23 @@ Route::get('/stats/public', [DoctorController::class, 'publicStats']);
 Route::get('/specialties', [DoctorController::class, 'specialties']);
 Route::get('/doctors', [DoctorController::class, 'bySpecialty']);
 
+// Auth (Sanctum personal access tokens for SPA)
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
+// Backward-compatible aliases
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('jwt.auth')->group(function () {
+Route::get('/doctors/{doctor}/availability', [DoctorAvailabilityController::class, 'forDoctor']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/auth/user', fn (Request $request) => $request->user());
+    Route::get('/user', fn (Request $request) => $request->user());
 
     // Patient dashboard routes
     Route::get('/patient/stats', [PatientController::class, 'stats']);
@@ -32,6 +43,13 @@ Route::middleware('jwt.auth')->group(function () {
     Route::put('/patient/appointments/{id}', [PatientController::class, 'update']);
     Route::delete('/patient/appointments/{id}', [PatientController::class, 'destroy']);
     Route::get('/patient/activity', [PatientController::class, 'activity']);
+
+    // Doctor self-service (schedule + profile)
+    Route::get('/doctor/profile', [DoctorSelfController::class, 'profile']);
+    Route::put('/doctor/profile', [DoctorSelfController::class, 'updateProfile']);
+    Route::get('/doctor/slots', [DoctorSelfController::class, 'slots']);
+    Route::post('/doctor/slots', [DoctorSelfController::class, 'addSlot']);
+    Route::delete('/doctor/slots/{slot}', [DoctorSelfController::class, 'deleteSlot']);
 
     // Doctor dashboard routes
     Route::get('/doctor/stats', [DoctorDashboardController::class, 'stats']);
@@ -51,6 +69,8 @@ Route::middleware('jwt.auth')->group(function () {
     Route::post('/admin/patients', [AdminDashboardController::class, 'storePatient']);
     Route::post('/admin/doctors', [AdminDashboardController::class, 'storeDoctor']);
     Route::post('/admin/appointments', [AdminDashboardController::class, 'storeAppointment']);
+    Route::patch('/admin/users/{user}', [AdminDashboardController::class, 'updateUser']);
+    Route::delete('/admin/users/{user}', [AdminDashboardController::class, 'deleteUser']);
 });
 
 Route::get('/status', function () {

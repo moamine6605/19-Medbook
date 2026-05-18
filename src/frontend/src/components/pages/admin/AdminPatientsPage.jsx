@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
-import { getAdminPatients, getAdminActivity } from '../../../services/api.js';
+import { getAdminPatients, getAdminActivity, adminUpdateUser, adminDeleteUser } from '../../../services/api.js';
 import { AdminCreateModal } from './AdminCreateModal.jsx';
 import '../../../styles/pages/Dashboard.css';
 
@@ -91,9 +91,12 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
                     <tr>
                       <th>Nom</th>
                       <th>Email</th>
+                      <th>Rôle</th>
+                      <th>Statut</th>
                       <th>Âge</th>
                       <th>Groupe sanguin</th>
                       <th>Inscription</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -101,9 +104,65 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
                       <tr key={p.id}>
                         <td>{p.name}</td>
                         <td className="text-muted">{p.email || '-'}</td>
+                        <td>
+                          <select
+                            className="input"
+                            style={{ padding: '0.35rem 0.5rem' }}
+                            value={p.role || 'patient'}
+                            onChange={async (e) => {
+                              try {
+                                await adminUpdateUser(p.id, { role: e.target.value });
+                                setRefreshKey((k) => k + 1);
+                              } catch (err) {
+                                console.error(err);
+                                alert('Erreur lors de la mise à jour du rôle.');
+                              }
+                            }}
+                          >
+                            <option value="patient">patient</option>
+                            <option value="doctor">doctor</option>
+                            <option value="admin">admin</option>
+                          </select>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={p.is_active ? 'btn btn-outline' : 'btn btn-primary'}
+                            onClick={async () => {
+                              try {
+                                await adminUpdateUser(p.id, { is_active: !p.is_active });
+                                setRefreshKey((k) => k + 1);
+                              } catch (err) {
+                                console.error(err);
+                                alert('Erreur lors de la mise à jour du statut.');
+                              }
+                            }}
+                          >
+                            {p.is_active ? 'Actif' : 'Désactivé'}
+                          </button>
+                        </td>
                         <td className="text-muted">{calcAge(p.birth_date) ?? '-'}</td>
                         <td className="text-muted">{p.blood_type || '-'}</td>
                         <td className="text-muted">{p.created_at || '-'}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            style={{ color: 'var(--destructive)', background: 'rgba(239, 68, 68, 0.05)' }}
+                            onClick={async () => {
+                              if (!window.confirm('Supprimer ce compte utilisateur ?')) return;
+                              try {
+                                await adminDeleteUser(p.id);
+                                setRefreshKey((k) => k + 1);
+                              } catch (err) {
+                                console.error(err);
+                                alert('Suppression impossible.');
+                              }
+                            }}
+                          >
+                            Supprimer
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

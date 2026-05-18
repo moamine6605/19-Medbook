@@ -263,6 +263,13 @@
     color: white;
 }
 
+.booking-time-btn:disabled,
+.booking-time-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(148, 163, 184, 0.15);
+}
+
 .booking-confirmation-container {
     display: flex;
     flex-direction: column;

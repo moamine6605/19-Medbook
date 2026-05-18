@@ -6,28 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
+        Schema::create('doctor_slots', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('doctor_id')->constrained('doctors')->onDelete('cascade');
             $table->date('date');
             $table->string('time', 5); // HH:MM
-            $table->enum('status', ['upcoming', 'completed', 'cancelled', 'in-progress'])->default('upcoming');
-            $table->enum('type', ['in-person', 'video'])->default('in-person');
             $table->timestamps();
+
+            $table->unique(['doctor_id', 'date', 'time']);
+            $table->index(['doctor_id', 'date']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('appointments');
+        Schema::dropIfExists('doctor_slots');
     }
 };
+

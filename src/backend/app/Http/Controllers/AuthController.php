@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Services\JwtService;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
@@ -18,56 +18,59 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        $role = 'patient';
-        if (str_contains($validatedData['email'], 'doctor')) {
-            $role = 'doctor';
-        } elseif (str_contains($validatedData['email'], 'admin')) {
-            $role = 'admin';
-        }
-
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password']),
-            'role' => $role,
+            'role' => 'patient',
         ]);
 
-        $token = JwtService::generateToken($user);
-        $cookie = cookie('token', $token, 120, '/', null, false, true, false, 'Lax');
+        $token = $user->createToken('spa')->plainTextToken;
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
-        ])->withCookie($cookie);
+        ], Response::HTTP_CREATED);
     }
 
     public function login(Request $request)
     {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
         if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Invalid login details'
-            ], 401);
+            return response()->json(['message' => 'Identifiants invalides.'], Response::HTTP_UNAUTHORIZED);
         }
 
         $user = User::where('email', $request['email'])->firstOrFail();
 
-        $token = JwtService::generateToken($user);
-        $cookie = cookie('token', $token, 120, '/', null, false, true, false, 'Lax');
+        if ($user->getAttribute('is_active') === false) {
+            return response()->json(['message' => 'Compte désactivé.'], Response::HTTP_FORBIDDEN);
+        }
+
+        // Revoke existing tokens for a clean SPA experience.
+        $user->tokens()->delete();
+        $token = $user->createToken('spa')->plainTextToken;
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user
-        ])->withCookie($cookie);
+        ]);
     }
 
     public function logout(Request $request)
     {
-        $cookie = cookie()->forget('token');
+        $user = $request->user();
+        if ($user) {
+            $user->currentAccessToken()?->delete();
+        }
 
         return response()->json([
             'message' => 'Logged out successfully'
-        ])->withCookie($cookie);
+        ]);
     }
 }

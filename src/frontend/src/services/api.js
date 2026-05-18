@@ -24,7 +24,7 @@ api.interceptors.request.use(
 );
 
 export const login = async (email, password) => {
-    const response = await api.post('/login', { email, password });
+    const response = await api.post('/auth/login', { email, password });
     if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -33,7 +33,7 @@ export const login = async (email, password) => {
 };
 
 export const register = async (name, email, password) => {
-    const response = await api.post('/register', { name, email, password });
+    const response = await api.post('/auth/register', { name, email, password });
     if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -43,7 +43,7 @@ export const register = async (name, email, password) => {
 
 export const logout = async () => {
     try {
-        await api.post('/logout');
+        await api.post('/auth/logout');
     } catch (e) {
         console.error('Logout error', e);
     }
@@ -52,7 +52,7 @@ export const logout = async () => {
 };
 
 export const getUser = async () => {
-    const response = await api.get('/user');
+    const response = await api.get('/auth/user');
     return response.data;
 };
 
@@ -72,7 +72,17 @@ export const getPatientStats = async () => {
 };
 
 export const getPatientAppointments = async () => {
-    const response = await api.get('/patient/appointments');
+    const response = await api.get('/patient/appointments', { params: { scope: 'upcoming' } });
+    return response.data;
+};
+
+export const getPatientAppointmentsAll = async () => {
+    const response = await api.get('/patient/appointments', { params: { scope: 'all' } });
+    return response.data;
+};
+
+export const getPatientAppointmentsPast = async () => {
+    const response = await api.get('/patient/appointments', { params: { scope: 'past' } });
     return response.data;
 };
 
@@ -166,6 +176,11 @@ export const getDoctorsBySpecialty = async (specialty) => {
     return response.data;
 };
 
+export const getDoctorAvailability = async (doctorId, date) => {
+    const response = await api.get(`/doctors/${doctorId}/availability`, { params: { date } });
+    return response.data;
+};
+
 export const createAppointment = async (data) => {
     const response = await api.post('/patient/appointments', data);
     return response.data;
@@ -178,6 +193,41 @@ export const updateAppointment = async (id, data) => {
 
 export const deleteAppointment = async (id) => {
     const response = await api.delete(`/patient/appointments/${id}`);
+    return response.data;
+};
+
+export const getDoctorProfile = async () => {
+    const response = await api.get('/doctor/profile');
+    return response.data;
+};
+
+export const updateDoctorProfile = async (data) => {
+    const response = await api.put('/doctor/profile', data);
+    return response.data;
+};
+
+export const getDoctorSlots = async (date = '') => {
+    const response = await api.get('/doctor/slots', { params: date ? { date } : {} });
+    return response.data;
+};
+
+export const addDoctorSlot = async (data) => {
+    const response = await api.post('/doctor/slots', data);
+    return response.data;
+};
+
+export const deleteDoctorSlot = async (slotId) => {
+    const response = await api.delete(`/doctor/slots/${slotId}`);
+    return response.data;
+};
+
+export const adminUpdateUser = async (userId, data) => {
+    const response = await api.patch(`/admin/users/${userId}`, data);
+    return response.data;
+};
+
+export const adminDeleteUser = async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}`);
     return response.data;
 };
 

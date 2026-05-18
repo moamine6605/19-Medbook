@@ -2,7 +2,17 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, TrendingUp, Video, MapPin } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
-import { getDoctorStats, getDoctorTodayAppointments, getDoctorRecentPatients, getDoctorMonthlySummary } from '../../services/api';
+import {
+  getDoctorStats,
+  getDoctorTodayAppointments,
+  getDoctorRecentPatients,
+  getDoctorMonthlySummary,
+  getDoctorProfile,
+  updateDoctorProfile,
+  getDoctorSlots,
+  addDoctorSlot,
+  deleteDoctorSlot
+} from '../../services/api';
 import '../../styles/pages/Dashboard.css';
 
 function getInitials(name = 'User') {
@@ -19,6 +29,12 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
   const [recentPatients, setRecentPatients] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [slotsDate, setSlotsDate] = useState(new Date().toISOString().split('T')[0]);
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [newSlotTime, setNewSlotTime] = useState('09:00');
 
   const userName = user?.name || 'Docteur';
 
@@ -43,6 +59,35 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     };
     fetchData();
   }, []);
+
+  const loadSlots = async (date) => {
+    setSlotsLoading(true);
+    try {
+      const data = await getDoctorSlots(date);
+      setSlots(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Erreur slots', e);
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      (async () => {
+        try {
+          const data = await getDoctorProfile();
+          setProfile(data);
+        } catch (e) {
+          console.error('Erreur profile', e);
+        }
+      })();
+    }
+    if (activeTab === 'schedule') {
+      loadSlots(slotsDate);
+    }
+  }, [activeTab]);
 
   const statCards = [
   {
@@ -93,6 +138,8 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                     notifications={todayAppointments.map(a => ({ id: a.id, action: `${a.patient} - ${a.time}`, description: a.reason, time: a.status === 'completed' ? 'Terminé' : a.status === 'in-progress' ? 'En cours' : 'À venir' }))}
                 />
 
+                {activeTab === 'dashboard' && (
+                <>
                 <div className="dashboard-stats-grid">
                     {statCards.map((stat) =>
           <div className={["card"].filter(Boolean).join(" ")} key={stat.title}>
@@ -232,6 +279,153 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                         </div>
                     </div>
                 </div>
+                </>
+                )}
+
+                {activeTab === 'schedule' && (
+                    <div className="card">
+                        <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <h3 className="card-title">Mes créneaux</h3>
+                                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Ajoutez ou supprimez des créneaux. Ils deviennent visibles immédiatement côté patient.</p>
+                            </div>
+                        </div>
+                        <div className="card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'end' }}>
+                                <div style={{ minWidth: '220px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Date</label>
+                                    <input
+                                      type="date"
+                                      className="form-control"
+                                      value={slotsDate}
+                                      onChange={(e) => {
+                                        setSlotsDate(e.target.value);
+                                        loadSlots(e.target.value);
+                                      }}
+                                    />
+                                </div>
+                                <div style={{ minWidth: '220px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Heure</label>
+                                    <input
+                                      type="time"
+                                      className="form-control"
+                                      value={newSlotTime}
+                                      step={1800}
+                                      onChange={(e) => setNewSlotTime(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  onClick={async () => {
+                                    try {
+                                      await addDoctorSlot({ date: slotsDate, time: newSlotTime });
+                                      await loadSlots(slotsDate);
+                                    } catch (e) {
+                                      console.error(e);
+                                      alert("Impossible d'ajouter ce créneau (déjà existant ?).");
+                                    }
+                                  }}
+                                >
+                                  Ajouter
+                                </button>
+                            </div>
+
+                            {slotsLoading ? (
+                              <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+                            ) : slots.length > 0 ? (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                                  {slots.map((slot) => (
+                                    <div key={slot.id} className="card" style={{ margin: 0 }}>
+                                      <div className="card-content" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                        <span style={{ fontWeight: 600 }}>{slot.time}</span>
+                                        <button
+                                          type="button"
+                                          className="btn btn-ghost"
+                                          style={{ color: 'var(--destructive)', background: 'rgba(239, 68, 68, 0.05)' }}
+                                          onClick={async () => {
+                                            if (!window.confirm('Supprimer ce créneau ?')) return;
+                                            try {
+                                              await deleteDoctorSlot(slot.id);
+                                              await loadSlots(slotsDate);
+                                            } catch (e) {
+                                              console.error(e);
+                                              alert('Créneau déjà réservé.');
+                                            }
+                                          }}
+                                        >
+                                          Supprimer
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : (
+                              <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Aucun créneau pour cette date.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'profile' && (
+                    <div className="card">
+                        <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <h3 className="card-title">Mon profil</h3>
+                                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Mettez à jour votre spécialité et vos informations.</p>
+                            </div>
+                        </div>
+                        <div className="card-content" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Spécialité</label>
+                                <input className="form-control" value={profile?.specialty || ''} onChange={(e) => setProfile((p) => ({ ...(p || {}), specialty: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Expérience</label>
+                                <input className="form-control" value={profile?.experience || ''} onChange={(e) => setProfile((p) => ({ ...(p || {}), experience: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Téléphone</label>
+                                <input className="form-control" value={profile?.phone || ''} onChange={(e) => setProfile((p) => ({ ...(p || {}), phone: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Adresse</label>
+                                <input className="form-control" value={profile?.address || ''} onChange={(e) => setProfile((p) => ({ ...(p || {}), address: e.target.value }))} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Bio</label>
+                                <textarea className="form-control" rows={5} value={profile?.bio || ''} onChange={(e) => setProfile((p) => ({ ...(p || {}), bio: e.target.value }))} />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  disabled={profileSaving}
+                                  onClick={async () => {
+                                    setProfileSaving(true);
+                                    try {
+                                      await updateDoctorProfile({
+                                        specialty: profile?.specialty || null,
+                                        experience: profile?.experience || null,
+                                        phone: profile?.phone || null,
+                                        address: profile?.address || null,
+                                        bio: profile?.bio || null,
+                                      });
+                                      alert('Profil mis à jour.');
+                                    } catch (e) {
+                                      console.error(e);
+                                      alert('Erreur lors de la mise à jour.');
+                                    } finally {
+                                      setProfileSaving(false);
+                                    }
+                                  }}
+                                >
+                                  Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>);
 

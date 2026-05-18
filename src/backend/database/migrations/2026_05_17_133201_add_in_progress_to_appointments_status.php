@@ -12,7 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Change status enum to include 'in-progress'
+        // MySQL-only enum alteration. SQLite doesn't support MODIFY COLUMN, and our
+        // create_appointments_table migration already includes the value.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE appointments MODIFY COLUMN status ENUM('upcoming', 'completed', 'cancelled', 'in-progress') DEFAULT 'upcoming'");
     }
 
@@ -21,6 +26,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE appointments MODIFY COLUMN status ENUM('upcoming', 'completed', 'cancelled') DEFAULT 'upcoming'");
     }
 };

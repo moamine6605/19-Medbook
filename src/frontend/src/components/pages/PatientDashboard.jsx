@@ -5,6 +5,7 @@ import { DashboardHeader } from '../DashboardHeader.jsx';
 import {
   getPatientStats,
   getPatientAppointments,
+  getPatientAppointmentsPast,
   getPatientActivity,
   updateAppointment,
   deleteAppointment
@@ -47,7 +48,8 @@ function getAppointmentStatus(dateStr, timeStr) {
 export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState([]); // upcoming
+  const [pastAppointments, setPastAppointments] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,13 +65,15 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
       setLoading(true);
     }
     try {
-      const [statsData, appointmentsData, activityData] = await Promise.all([
+      const [statsData, appointmentsData, pastAppointmentsData, activityData] = await Promise.all([
         getPatientStats(),
         getPatientAppointments(),
+        getPatientAppointmentsPast(),
         getPatientActivity(),
       ]);
       setStats(statsData);
       setAppointments(appointmentsData);
+      setPastAppointments(pastAppointmentsData);
       setActivities(activityData);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -83,14 +87,16 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
 
     const fetchInitialData = async () => {
       try {
-        const [statsData, appointmentsData, activityData] = await Promise.all([
+        const [statsData, appointmentsData, pastAppointmentsData, activityData] = await Promise.all([
           getPatientStats(),
           getPatientAppointments(),
+          getPatientAppointmentsPast(),
           getPatientActivity(),
         ]);
         if (active) {
           setStats(statsData);
           setAppointments(appointmentsData);
+          setPastAppointments(pastAppointmentsData);
           setActivities(activityData);
           setLoading(false);
         }
@@ -491,6 +497,51 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="card">
+            <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h3 className="card-title">Historique des rendez-vous</h3>
+                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Consultez vos rendez-vous passés.</p>
+              </div>
+            </div>
+            <div className="card-content">
+              {loading ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '3rem 0' }}>
+                  Chargement...
+                </p>
+              ) : pastAppointments.length > 0 ? (
+                <div className="dashboard-appointment-list">
+                  {pastAppointments.map((appointment) => (
+                    <div key={appointment.id} className="dashboard-appointment-item" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1rem', background: 'var(--background)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div className="avatar avatar-lg">{getInitials(appointment.doctor)}</div>
+                          <div>
+                            <h4 className="dashboard-appointment-doctor" style={{ margin: 0 }}>{appointment.doctor}</h4>
+                            <p className="text-muted dashboard-appointment-specialty" style={{ margin: '0.25rem 0 0 0' }}>{appointment.specialty}</p>
+                          </div>
+                        </div>
+                        <span className="badge badge-default" style={{ textTransform: 'capitalize' }}>
+                          {appointment.status === 'completed' ? 'Terminé' : appointment.status}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}><Calendar size={16} /> {appointment.date}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}><Clock size={16} /> {appointment.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
+                  <p className="text-muted">Aucun rendez-vous passé.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

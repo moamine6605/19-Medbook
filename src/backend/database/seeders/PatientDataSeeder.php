@@ -58,14 +58,25 @@ class PatientDataSeeder extends Seeder
                 $hours = [9, 10, 11, 14, 15, 16];
                 $minutes = ['00', '30'];
 
-                Appointment::create([
-                    'patient_id' => $patient->id,
-                    'doctor_id' => $doctor->id,
-                    'date' => $date->format('Y-m-d'),
-                    'time' => $hours[array_rand($hours)] . ':' . $minutes[array_rand($minutes)],
-                    'status' => 'upcoming',
-                    'type' => rand(0, 1) ? 'in-person' : 'video',
-                ]);
+                for ($tries = 0; $tries < 10; $tries++) {
+                    $time = $hours[array_rand($hours)] . ':' . $minutes[array_rand($minutes)];
+                    $dateStr = $date->format('Y-m-d');
+                    $exists = Appointment::where('doctor_id', $doctor->id)
+                        ->whereDate('date', $dateStr)
+                        ->where('time', $time)
+                        ->exists();
+                    if ($exists) continue;
+
+                    Appointment::create([
+                        'patient_id' => $patient->id,
+                        'doctor_id' => $doctor->id,
+                        'date' => $dateStr,
+                        'time' => $time,
+                        'status' => 'upcoming',
+                        'type' => rand(0, 1) ? 'in-person' : 'video',
+                    ]);
+                    break;
+                }
             }
 
             // --- Completed appointments (3-8 per patient) ---
@@ -76,14 +87,25 @@ class PatientDataSeeder extends Seeder
                 $hours = [9, 10, 11, 14, 15, 16];
                 $minutes = ['00', '30'];
 
-                Appointment::create([
-                    'patient_id' => $patient->id,
-                    'doctor_id' => $doctor->id,
-                    'date' => $date->format('Y-m-d'),
-                    'time' => $hours[array_rand($hours)] . ':' . $minutes[array_rand($minutes)],
-                    'status' => 'completed',
-                    'type' => rand(0, 1) ? 'in-person' : 'video',
-                ]);
+                for ($tries = 0; $tries < 10; $tries++) {
+                    $time = $hours[array_rand($hours)] . ':' . $minutes[array_rand($minutes)];
+                    $dateStr = $date->format('Y-m-d');
+                    $exists = Appointment::where('doctor_id', $doctor->id)
+                        ->whereDate('date', $dateStr)
+                        ->where('time', $time)
+                        ->exists();
+                    if ($exists) continue;
+
+                    Appointment::create([
+                        'patient_id' => $patient->id,
+                        'doctor_id' => $doctor->id,
+                        'date' => $dateStr,
+                        'time' => $time,
+                        'status' => 'completed',
+                        'type' => rand(0, 1) ? 'in-person' : 'video',
+                    ]);
+                    break;
+                }
             }
 
             // --- Active prescriptions (1-3 per patient) ---

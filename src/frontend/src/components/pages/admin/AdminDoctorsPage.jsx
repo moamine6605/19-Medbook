@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
-import { getAdminDoctors, getAdminActivity } from '../../../services/api.js';
+import { getAdminDoctors, getAdminActivity, adminUpdateUser, adminDeleteUser } from '../../../services/api.js';
 import { AdminCreateModal } from './AdminCreateModal.jsx';
 import '../../../styles/pages/Dashboard.css';
 
@@ -105,6 +105,7 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
                       <th>Avis</th>
                       <th>Exp.</th>
                       <th>Statut</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -122,6 +123,46 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
                         <td className="text-muted">{d.experience || '-'}</td>
                         <td>
                           <span className={`badge ${d.status === 'Actif' ? 'badge-success' : 'badge-secondary'}`}>{d.status}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {d.user_id ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                className={d.is_active ? 'btn btn-outline' : 'btn btn-primary'}
+                                onClick={async () => {
+                                  try {
+                                    await adminUpdateUser(d.user_id, { is_active: !d.is_active });
+                                    setRefreshKey((k) => k + 1);
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Erreur statut.');
+                                  }
+                                }}
+                              >
+                                {d.is_active ? 'Désactiver' : 'Activer'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ color: 'var(--destructive)', background: 'rgba(239, 68, 68, 0.05)' }}
+                                onClick={async () => {
+                                  if (!window.confirm('Supprimer ce compte utilisateur ?')) return;
+                                  try {
+                                    await adminDeleteUser(d.user_id);
+                                    setRefreshKey((k) => k + 1);
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Suppression impossible.');
+                                  }
+                                }}
+                              >
+                                Supprimer
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\DoctorSlot;
 use App\Models\Prescription;
 use App\Models\PatientActivity;
+use App\Mail\AppointmentConfirmation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpFoundation\Response;
 
 class PatientController extends Controller
 {
@@ -50,11 +54,24 @@ class PatientController extends Controller
     {
         $user = $request->user();
 
-        $appointments = Appointment::with('doctor:id,name,specialty')
-            ->where('patient_id', $user->id)
-            ->where('status', 'upcoming')
-            ->orderBy('date')
-            ->orderBy('time')
+        $request->validate([
+            'scope' => ['nullable', 'in:upcoming,past,all'],
+        ]);
+
+        $scope = $request->query('scope', 'upcoming');
+
+        $query = Appointment::with('doctor:id,name,specialty')
+            ->where('patient_id', $user->id);
+
+        if ($scope === 'upcoming') {
+            $query->where('status', 'upcoming');
+        } elseif ($scope === 'past') {
+            $query->whereIn('status', ['completed', 'cancelled']);
+        }
+
+        $appointments = $query
+            ->orderByDesc('date')
+            ->orderByDesc('time')
             ->get()
             ->map(function ($appointment) {
                 return [
@@ -65,6 +82,7 @@ class PatientController extends Controller
                     'time' => $appointment->time,
                     'status' => $appointment->status,
                     'type' => $appointment->type,
+                    'reason' => $appointment->reason,
                 ];
             });
 
@@ -111,6 +129,28 @@ class PatientController extends Controller
         $user = $request->user();
         $doctor = \App\Models\Doctor::findOrFail($request->doctor_id);
 
+        // Ensure the doctor actually opened this slot.
+        $slotExists = DoctorSlot::where('doctor_id', $doctor->id)
+            ->whereDate('date', $request->date)
+            ->where('time', $request->time)
+            ->exists();
+        if (!$slotExists) {
+            return response()->json([
+                'message' => 'Créneau indisponible.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        // Anti-chevauchement: no double-booking for the same doctor/date/time.
+        $conflict = Appointment::where('doctor_id', $doctor->id)
+            ->whereDate('date', $request->date)
+            ->where('time', $request->time)
+            ->exists();
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Ce créneau est déjà réservé.',
+            ], Response::HTTP_CONFLICT);
+        }
+
         $appointment = Appointment::create([
             'patient_id' => $user->id,
             'doctor_id' => $request->doctor_id,
@@ -127,6 +167,13 @@ class PatientController extends Controller
             'description' => 'Avec le Dr. ' . $doctor->name . ' (' . $doctor->specialty . ')',
             'type' => 'appointment',
         ]);
+
+        // Email notification (MAIL_MAILER=log by default locally).
+        try {
+            Mail::to($user->email)->send(new AppointmentConfirmation($appointment));
+        } catch (\Throwable $e) {
+            // Don't fail the booking if mail fails in local environments.
+        }
 
         return response()->json([
             'message' => 'Rendez-vous créé avec succès',
@@ -155,6 +202,29 @@ class PatientController extends Controller
 
         $user = $request->user();
         $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
+
+        $doctorId = $appointment->doctor_id;
+
+        $slotExists = DoctorSlot::where('doctor_id', $doctorId)
+            ->whereDate('date', $request->date)
+            ->where('time', $request->time)
+            ->exists();
+        if (!$slotExists) {
+            return response()->json([
+                'message' => 'Créneau indisponible.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $conflict = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('date', $request->date)
+            ->where('time', $request->time)
+            ->where('id', '!=', $appointment->id)
+            ->exists();
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Ce créneau est déjà réservé.',
+            ], Response::HTTP_CONFLICT);
+        }
 
         $appointment->date = $request->date;
         $appointment->time = $request->time;

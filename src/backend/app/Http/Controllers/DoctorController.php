@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\DoctorSlot;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -100,14 +101,14 @@ class DoctorController extends Controller
         }
 
         $doctors = $query->limit(20)->get()->map(function ($doctor) {
-            // Check if doctor has appointments today
-            $todayCount = Appointment::where('doctor_id', $doctor->id)
-                ->whereDate('date', Carbon::today())
-                ->count();
+            $today = Carbon::today()->toDateString();
+            $totalSlotsToday = DoctorSlot::where('doctor_id', $doctor->id)->whereDate('date', $today)->count();
+            $bookedToday = Appointment::where('doctor_id', $doctor->id)->whereDate('date', $today)->count();
+            $freeToday = max(0, $totalSlotsToday - $bookedToday);
 
-            $availability = $todayCount < 8
+            $availability = $freeToday > 0
                 ? "Disponible aujourd'hui"
-                : 'Disponible demain';
+                : ($totalSlotsToday > 0 ? 'Complet aujourd\'hui' : 'Sur rendez-vous');
 
             return [
                 'id' => $doctor->id,
@@ -116,6 +117,9 @@ class DoctorController extends Controller
                 'rating' => $doctor->rating,
                 'reviews' => $doctor->reviews,
                 'experience' => $doctor->experience,
+                'phone' => $doctor->phone,
+                'address' => $doctor->address,
+                'bio' => $doctor->bio,
                 'availability' => $availability,
             ];
         });

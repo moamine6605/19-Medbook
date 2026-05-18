@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
         // Seed 1000 doctors
         $this->call(DoctorSeeder::class);
 
+        // Seed default slots (next 14 days) for each doctor so booking works.
+        $this->call(DoctorSlotSeeder::class);
+
         // Seed 1000 patient users
         $this->call(PatientSeeder::class);
 

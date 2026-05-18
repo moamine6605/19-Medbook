@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, Check } from 'lucide-react';
-import { getSpecialties, getDoctorsBySpecialty, createAppointment } from '../../services/api';
+import { getSpecialties, getDoctorsBySpecialty, createAppointment, getDoctorAvailability } from '../../services/api';
 import '../../styles/pages/BookingPage.css';
 
 function getInitials(name = 'User') {
@@ -18,6 +18,8 @@ export function BookingPage({ onBookingComplete }) {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [availability, setAvailability] = useState([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   const [specialties, setSpecialties] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -75,10 +77,19 @@ export function BookingPage({ onBookingComplete }) {
     return days;
   };
 
-  const timeSlots = [
-  '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30'];
+  const loadAvailability = async (date) => {
+    if (!selectedDoctor?.id || !date) return;
+    setLoadingAvailability(true);
+    try {
+      const data = await getDoctorAvailability(selectedDoctor.id, date);
+      setAvailability(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Erreur lors du chargement des disponibilités:', e);
+      setAvailability([]);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
 
 
   const handleNext = () => {
@@ -193,6 +204,9 @@ export function BookingPage({ onBookingComplete }) {
                       key={doctor.id}
                       onClick={() => {
                         setSelectedDoctor(doctor);
+                        setSelectedDate('');
+                        setSelectedTime('');
+                        setAvailability([]);
                         handleNext();
                       }}
                       className={`booking-doctor-card ${selectedDoctor?.id === doctor.id ? 'selected' : ''}`}>
@@ -237,7 +251,11 @@ export function BookingPage({ onBookingComplete }) {
                                         {generateCalendarDays().map((day) =>
                   <button
                     key={day.date}
-                    onClick={() => setSelectedDate(day.date)}
+                    onClick={() => {
+                      setSelectedDate(day.date);
+                      setSelectedTime('');
+                      loadAvailability(day.date);
+                    }}
                     className={`booking-date-btn ${selectedDate === day.date ? 'selected' : ''}`}>
                     
                                                 <div className="booking-date-day">{day.day}</div>
@@ -247,23 +265,35 @@ export function BookingPage({ onBookingComplete }) {
                                     </div>
                                 </div>
 
-                                {selectedDate &&
+                {selectedDate &&
               <div>
                                         <h4 className="booking-section-title">Sélectionnez l'heure</h4>
-                                        <div className="booking-grid-3">
-                                            {timeSlots.map((time) =>
+                                        {loadingAvailability ? (
+                                            <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                                Chargement des créneaux...
+                                            </p>
+                                        ) : availability.length > 0 ? (
+                                            <div className="booking-grid-3">
+                                                {availability.map((slot) =>
                   <button
-                    key={time}
+                    key={slot.time}
+                    disabled={!!slot.booked}
                     onClick={() => {
-                      setSelectedTime(time);
+                      if (slot.booked) return;
+                      setSelectedTime(slot.time);
                       handleNext();
                     }}
-                    className={`booking-time-btn ${selectedTime === time ? 'selected' : ''}`}>
+                    className={`booking-time-btn ${selectedTime === slot.time ? 'selected' : ''} ${slot.booked ? 'disabled' : ''}`}>
                     
-                                                    {time}
-                                                </button>
+                                                    {slot.time}
+                  </button>
                   )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                                Aucun créneau disponible pour cette date.
+                                            </p>
+                                        )}
                                     </div>
               }
                             </div>

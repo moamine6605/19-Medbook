@@ -359,7 +359,7 @@ class AdminDashboardController extends Controller
 
         $q = trim((string) $request->query('q', ''));
 
-        $select = ['id', 'name', 'email', 'birth_date', 'created_at'];
+        $select = ['id', 'name', 'email', 'birth_date', 'created_at', 'role', 'is_active'];
         if (Schema::hasColumn('users', 'blood_type')) {
             $select[] = 'blood_type';
         }
@@ -384,6 +384,8 @@ class AdminDashboardController extends Controller
                     'email' => $u->email,
                     'birth_date' => $u->birth_date?->toDateString(),
                     'created_at' => optional($u->created_at)->toDateString(),
+                    'role' => $u->role,
+                    'is_active' => (bool) $u->is_active,
                 ];
 
                 if (Schema::hasColumn('users', 'blood_type')) {
@@ -414,7 +416,17 @@ class AdminDashboardController extends Controller
         $minRating = $request->query('min_rating', null);
 
         $query = Doctor::query()
-            ->select(['id', 'name', 'specialty', 'rating', 'reviews', 'experience', 'user_id'])
+            ->leftJoin('users', 'users.id', '=', 'doctors.user_id')
+            ->select([
+                'doctors.id',
+                'doctors.name',
+                'doctors.specialty',
+                'doctors.rating',
+                'doctors.reviews',
+                'doctors.experience',
+                'doctors.user_id',
+                'users.is_active as is_active',
+            ])
             ->orderByDesc('rating')
             ->orderBy('name');
 
@@ -427,7 +439,7 @@ class AdminDashboardController extends Controller
         }
 
         return response()->json(
-            $query->limit(1000)->get()->map(function (Doctor $d) {
+            $query->limit(1000)->get()->map(function ($d) {
                 return [
                     'id' => $d->id,
                     'name' => $d->name,
@@ -435,7 +447,9 @@ class AdminDashboardController extends Controller
                     'rating' => $d->rating,
                     'reviews' => $d->reviews,
                     'experience' => $d->experience,
-                    'status' => $d->user_id ? 'Actif' : 'Inactif',
+                    'user_id' => $d->user_id,
+                    'is_active' => $d->user_id ? (bool) $d->is_active : null,
+                    'status' => $d->user_id ? ((bool) $d->is_active ? 'Actif' : 'Désactivé') : 'Inactif',
                 ];
             })->values()
         );
@@ -543,6 +557,66 @@ class AdminDashboardController extends Controller
         return response()->json([
             'id' => $appointment->id,
         ], Response::HTTP_CREATED);
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $this->authorizeAdmin($request);
+
+        $data = $request->validate([
+            'role' => ['nullable', Rule::in(['patient', 'doctor', 'admin'])],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $oldRole = $user->role;
+
+        if (array_key_exists('role', $data) && $data['role'] !== null) {
+            $user->role = $data['role'];
+
+            if ($data['role'] === 'doctor') {
+                // Ensure a doctor profile exists and is linked to this user.
+                $doctor = Doctor::where('user_id', $user->id)->first();
+                if (!$doctor) {
+                    Doctor::create([
+                        'user_id' => $user->id,
+                        'name' => $user->name,
+                        'specialty' => 'Médecin généraliste',
+                        'experience' => '1 an',
+                        'rating' => 4.5,
+                        'is_featured' => false,
+                    ]);
+                }
+            } elseif ($oldRole === 'doctor') {
+                // Detach doctor profile, keep the row for admin listing/history.
+                Doctor::where('user_id', $user->id)->update(['user_id' => null]);
+            }
+        }
+
+        if (array_key_exists('is_active', $data) && $data['is_active'] !== null) {
+            $user->is_active = (bool) $data['is_active'];
+        }
+
+        $user->save();
+
+        return response()->json([
+            'id' => $user->id,
+            'role' => $user->role,
+            'is_active' => (bool) $user->is_active,
+        ]);
+    }
+
+    public function deleteUser(Request $request, User $user)
+    {
+        $this->authorizeAdmin($request);
+
+        if ($user->role === 'doctor') {
+            Doctor::where('user_id', $user->id)->update(['user_id' => null]);
+        }
+
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Utilisateur supprimé.']);
     }
 
     /**
