@@ -359,7 +359,10 @@ class AdminDashboardController extends Controller
 
         $q = trim((string) $request->query('q', ''));
 
-        $select = ['id', 'name', 'email', 'birth_date', 'created_at', 'role', 'is_active'];
+        $select = ['id', 'name', 'email', 'birth_date', 'created_at', 'role'];
+        if (Schema::hasColumn('users', 'is_active')) {
+            $select[] = 'is_active';
+        }
         if (Schema::hasColumn('users', 'blood_type')) {
             $select[] = 'blood_type';
         }
@@ -385,7 +388,7 @@ class AdminDashboardController extends Controller
                     'birth_date' => $u->birth_date?->toDateString(),
                     'created_at' => optional($u->created_at)->toDateString(),
                     'role' => $u->role,
-                    'is_active' => (bool) $u->is_active,
+                    'is_active' => Schema::hasColumn('users', 'is_active') ? (bool) $u->is_active : true,
                 ];
 
                 if (Schema::hasColumn('users', 'blood_type')) {
@@ -415,18 +418,25 @@ class AdminDashboardController extends Controller
         $q = trim((string) $request->query('q', ''));
         $minRating = $request->query('min_rating', null);
 
+        $select = [
+            'doctors.id',
+            'doctors.name',
+            'doctors.specialty',
+            'doctors.rating',
+            'doctors.reviews',
+            'doctors.experience',
+            'doctors.user_id',
+        ];
+        if (Schema::hasColumn('users', 'is_active')) {
+            $select[] = 'users.is_active as is_active';
+        } else {
+            // MySQL schema might not be migrated yet; keep API stable.
+            $select[] = \Illuminate\Support\Facades\DB::raw('NULL as is_active');
+        }
+
         $query = Doctor::query()
             ->leftJoin('users', 'users.id', '=', 'doctors.user_id')
-            ->select([
-                'doctors.id',
-                'doctors.name',
-                'doctors.specialty',
-                'doctors.rating',
-                'doctors.reviews',
-                'doctors.experience',
-                'doctors.user_id',
-                'users.is_active as is_active',
-            ])
+            ->select($select)
             ->orderByDesc('rating')
             ->orderBy('name');
 
@@ -563,10 +573,14 @@ class AdminDashboardController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        $data = $request->validate([
+        $rules = [
             'role' => ['nullable', Rule::in(['patient', 'doctor', 'admin'])],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        ];
+        if (Schema::hasColumn('users', 'is_active')) {
+            $rules['is_active'] = ['nullable', 'boolean'];
+        }
+
+        $data = $request->validate($rules);
 
         $oldRole = $user->role;
 
@@ -592,8 +606,10 @@ class AdminDashboardController extends Controller
             }
         }
 
-        if (array_key_exists('is_active', $data) && $data['is_active'] !== null) {
-            $user->is_active = (bool) $data['is_active'];
+        if (Schema::hasColumn('users', 'is_active')) {
+            if (array_key_exists('is_active', $data) && $data['is_active'] !== null) {
+                $user->is_active = (bool) $data['is_active'];
+            }
         }
 
         $user->save();

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -47,7 +48,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request['email'])->firstOrFail();
 
-        if ($user->getAttribute('is_active') === false) {
+        if (Schema::hasColumn('users', 'is_active') && $user->getAttribute('is_active') === false) {
             return response()->json(['message' => 'Compte désactivé.'], Response::HTTP_FORBIDDEN);
         }
 
