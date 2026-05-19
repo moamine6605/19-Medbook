@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
 import { getAdminAppointments, getAdminActivity } from '../../../services/api.js';
@@ -21,6 +21,7 @@ function formatStatus(status) {
 
 export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const userName = user?.name || 'Administrateur';
 
   const [appointments, setAppointments] = useState([]);
@@ -31,10 +32,18 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
   const [timing, setTiming] = useState('all'); // all|upcoming|ended
   const [range, setRange] = useState('all'); // all|day|week|month
   const [anchorDate, setAnchorDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [createOpen, setCreateOpen] = useState(false);
   const [createKey, setCreateKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const lastRefreshKeyRef = useRef(refreshKey);
+
+  const syncCreateParam = (nextOpen) => {
+    const params = new URLSearchParams(location.search);
+    if (nextOpen) params.set('create', 'appointment');
+    else params.delete('create');
+    const nextSearch = params.toString();
+    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
+  };
+  const createOpen = new URLSearchParams(location.search).get('create') === 'appointment';
 
   const requestParams = useMemo(() => ({
     q,
@@ -100,7 +109,16 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
             <h3 className="card-title">Liste des rendez-vous</h3>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="button" className="btn btn-primary" onClick={() => { setCreateKey((k) => k + 1); setCreateOpen(true); }}>Ajouter</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setCreateKey((k) => k + 1);
+                  syncCreateParam(true);
+                }}
+              >
+                Ajouter
+              </button>
               <button type="button" className="btn btn-ghost" onClick={() => navigate('/admin/dashboard')}>Retour au dashboard</button>
             </div>
           </div>
@@ -179,8 +197,8 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
         key={createKey}
         open={createOpen}
         kind="appointment"
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => setRefreshKey((k) => k + 1)}
+        onClose={() => { syncCreateParam(false); }}
+        onCreated={() => { setRefreshKey((k) => k + 1); syncCreateParam(false); }}
       />
     </div>
   );

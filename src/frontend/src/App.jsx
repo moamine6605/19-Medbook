@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router';
 import {LandingPage} from "./components/pages/LandingPage.jsx";
 import {LoginPage} from "./components/pages/LoginPage.jsx";
 import {RegisterPage} from "./components/pages/RegisterPage.jsx";
@@ -13,6 +13,7 @@ import { AdminDoctorsPage } from "./components/pages/admin/AdminDoctorsPage.jsx"
 import { AdminArchivePage } from "./components/pages/admin/AdminArchivePage.jsx";
 import { login, register, logout, getUser } from './services/api';
 import { ToastProvider } from './components/ui/ToastProvider.jsx';
+import { onEvent } from './services/events.js';
 
 
 
@@ -20,24 +21,28 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   return (
       <ToastProvider>
         <BrowserRouter>
           <AppRoutes
               isAuthenticated={isAuthenticated}
+              authChecked={authChecked}
               userRole={userRole}
               user={user}
               setIsAuthenticated={setIsAuthenticated}
               setUserRole={setUserRole}
-              setUser={setUser} />
+              setUser={setUser}
+              setAuthChecked={setAuthChecked} />
         </BrowserRouter>
       </ToastProvider>);
 
 }
 
-function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUserRole, setUser }) {
+function AppRoutes({ isAuthenticated, authChecked, userRole, user, setIsAuthenticated, setUserRole, setUser, setAuthChecked }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const initAuth = async () => {
@@ -54,9 +59,44 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
           localStorage.removeItem('user');
         }
       }
+      setAuthChecked(true);
     };
     initAuth();
+  }, [setIsAuthenticated, setUserRole, setUser, setAuthChecked]);
+
+  // When profile/user data changes elsewhere, refresh the in-memory user so headers update.
+  useEffect(() => {
+    const off = onEvent('user:changed', async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const userData = await getUser();
+        setIsAuthenticated(true);
+        setUserRole(userData.role);
+        setUser(userData);
+      } catch {
+        // Ignore; auth state can recover on next navigation.
+      }
+    });
+    return () => off();
   }, [setIsAuthenticated, setUserRole, setUser]);
+
+  // Remember the last visited admin route so refresh/server redirects can restore it.
+  useEffect(() => {
+    if (userRole !== 'admin') return;
+    if (!location.pathname.startsWith('/admin/')) return;
+    localStorage.setItem('last_admin_path', `${location.pathname}${location.search}${location.hash}`);
+  }, [userRole, location.pathname, location.search, location.hash]);
+
+  // If we land on /admin/dashboard but we previously visited another admin section, restore it.
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== 'admin') return;
+    if (location.pathname !== '/admin/dashboard') return;
+    const last = localStorage.getItem('last_admin_path');
+    if (!last || !last.startsWith('/admin/')) return;
+    if (last === '/admin/dashboard') return;
+    navigate(last, { replace: true });
+  }, [isAuthenticated, userRole, location.pathname, navigate]);
 
   const handleLogin = async (email, password) => {
     const data = await login(email, password);
@@ -120,7 +160,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/login"
             element={
-              isAuthenticated ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated ?
                   <Navigate to={userRole === 'doctor' ? '/doctor/dashboard' : userRole === 'admin' ? '/admin/dashboard' : '/patient/dashboard'} /> :
 
                   <LoginPage
@@ -134,7 +176,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/register"
             element={
-              isAuthenticated ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated ?
                   <Navigate to="/patient/dashboard" /> :
 
                   <RegisterPage
@@ -172,7 +216,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/patient/dashboard"
             element={
-              isAuthenticated && userRole === 'patient' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'patient' ?
                   <PatientDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} onNavigate={(path) => navigate(path)} /> :
 
                   <Navigate to="/login" />
@@ -184,7 +230,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/doctor/dashboard"
             element={
-              isAuthenticated && userRole === 'doctor' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'doctor' ?
                   <DoctorDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
@@ -196,7 +244,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/admin/dashboard"
             element={
-              isAuthenticated && userRole === 'admin' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'admin' ?
                   <AdminDashboard user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
@@ -206,7 +256,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/admin/appointments"
             element={
-              isAuthenticated && userRole === 'admin' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'admin' ?
                   <AdminAppointmentsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
@@ -216,7 +268,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/admin/patients"
             element={
-              isAuthenticated && userRole === 'admin' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'admin' ?
                   <AdminPatientsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
@@ -226,7 +280,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/admin/doctors"
             element={
-              isAuthenticated && userRole === 'admin' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'admin' ?
                   <AdminDoctorsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
@@ -236,7 +292,9 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
         <Route
             path="/admin/archive"
             element={
-              isAuthenticated && userRole === 'admin' ?
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : isAuthenticated && userRole === 'admin' ?
                   <AdminArchivePage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />

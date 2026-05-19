@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getAdminStats, getAdminAppointmentsAnalytics, getAdminRevenueAnalytics, getAdminTopDoctors, getAdminActivity } from '../../services/api';
-import { AdminCreateModal } from './admin/AdminCreateModal.jsx';
 import { onEvent } from '../../services/events.js';
 import '../../styles/pages/Dashboard.css';
 
@@ -24,7 +23,6 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [createOpen, setCreateOpen] = useState(false);
 
   const userName = user?.name || 'Administrateur';
 
@@ -131,12 +129,6 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                     onHomeClick={onHomeClick}
                     notifications={recentActivity.map((a, i) => ({ id: i, action: a.action, description: a.user, time: a.time }))}
                 />
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-                    <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-                        Ajouter
-                    </button>
-                </div>
 
                 <div className="dashboard-stats-grid">
                     {statCards.map((stat) =>
@@ -302,7 +294,6 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                 </div>
             </div>
 
-            <AdminCreateModal kind="appointment" open={createOpen} onClose={() => setCreateOpen(false)} onCreated={() => refresh()} />
         </div>);
 
 }

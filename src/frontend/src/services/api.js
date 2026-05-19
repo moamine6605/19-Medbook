@@ -97,6 +97,18 @@ export const getPatientActivity = async () => {
     return response.data;
 };
 
+export const getPatientProfile = async () => {
+    const response = await api.get('/patient/profile');
+    return response.data;
+};
+
+export const updatePatientProfile = async (data) => {
+    const response = await api.put('/patient/profile', data);
+    // Ensure header/sidebar user name stays in sync.
+    emitEvent('user:changed');
+    return response.data;
+};
+
 export const getDoctorStats = async () => {
     const response = await api.get('/doctor/stats');
     return response.data;

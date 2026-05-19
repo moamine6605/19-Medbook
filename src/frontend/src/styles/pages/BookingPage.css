@@ -4,6 +4,15 @@
     padding: 2rem;
 }
 
+.booking-container-embedded {
+    min-height: auto;
+    padding: 0;
+}
+
+.booking-container-embedded .booking-content {
+    max-width: none;
+}
+
 .booking-content {
     max-width: 72rem;
     margin: 0 auto;

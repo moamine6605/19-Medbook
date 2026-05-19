@@ -43,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/patient/appointments/{id}', [PatientController::class, 'update']);
     Route::delete('/patient/appointments/{id}', [PatientController::class, 'destroy']);
     Route::get('/patient/activity', [PatientController::class, 'activity']);
+    Route::get('/patient/profile', [PatientController::class, 'profile']);
+    Route::put('/patient/profile', [PatientController::class, 'updateProfile']);
 
     // Doctor self-service (schedule + profile)
     Route::get('/doctor/profile', [DoctorSelfController::class, 'profile']);

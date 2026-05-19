@@ -338,8 +338,10 @@ class AdminDashboardController extends Controller
         }
 
         $appointments = $query
-            ->orderBy('date')
-            ->orderBy('time')
+            // Sort newest/furthest-in-the-future first so upcoming appointments are not pushed
+            // out by large historical datasets when applying the hard limit.
+            ->orderByDesc('date')
+            ->orderByDesc('time')
             ->limit(500)
             ->get()
             ->map(function (Appointment $appointment) use ($now) {

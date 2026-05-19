@@ -11,7 +11,7 @@ function getInitials(name = 'User') {
 
 
 
-export function BookingPage({ isAuthenticated, onBookingComplete }) {
+export function BookingPage({ isAuthenticated, onBookingComplete, embedded = false }) {
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
@@ -137,7 +137,7 @@ export function BookingPage({ isAuthenticated, onBookingComplete }) {
   };
 
   return (
-    <div className="booking-container">
+    <div className={["booking-container", embedded ? "booking-container-embedded" : ""].filter(Boolean).join(" ")}>
             <div className="booking-content">
                 {/* Progress Steps */}
                 <div className="booking-progress">

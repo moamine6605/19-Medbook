@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, Users, TrendingUp, Video, MapPin } from 'lucide-react';
+import { Calendar, Clock, Users, TrendingUp, Video, MapPin, Trash2 } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { useToast } from '../ui/useToast.js';
@@ -29,7 +29,11 @@ function getInitials(name = 'User') {
 
 export function DoctorDashboard({ onLogout, user, onHomeClick }) {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const allowed = new Set(['dashboard', 'appointments', 'patients', 'schedule', 'profile']);
+    const saved = localStorage.getItem('doctor_active_tab');
+    return allowed.has(saved) ? saved : 'dashboard';
+  });
   const [stats, setStats] = useState(null);
   const [todayAppointments, setTodayAppointments] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -60,6 +64,11 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
   useEffect(() => { slotsDateRef.current = slotsDate; }, [slotsDate]);
   useEffect(() => { patientsQueryRef.current = patientsQuery; }, [patientsQuery]);
 
+  // Persist selected tab across refreshes.
+  useEffect(() => {
+    localStorage.setItem('doctor_active_tab', activeTab);
+  }, [activeTab]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -70,9 +79,9 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
           getDoctorMonthlySummary(),
         ]);
         setStats(statsData);
-        setTodayAppointments(appointmentsData);
-        setRecentPatients(patientsData);
-        setMonthlySummary(summaryData);
+        setTodayAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+        setRecentPatients(Array.isArray(patientsData) ? patientsData : []);
+        setMonthlySummary(summaryData || null);
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       } finally {
@@ -80,6 +89,15 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
       }
     };
     fetchData();
+  }, []);
+
+  // If the user refreshes while being on a non-dashboard tab, load that tab's data immediately.
+  useEffect(() => {
+    if (activeTab === 'appointments') loadAppointments(appointmentsScope);
+    if (activeTab === 'patients') loadPatientsAll();
+    if (activeTab === 'schedule') loadSlots(slotsDate);
+    if (activeTab === 'profile') loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep doctor UI consistent when data changes elsewhere (admin/patient actions).
@@ -650,7 +668,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                             {slotsLoading ? (
                               <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
                             ) : slots.length > 0 ? (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
                                   {slots.map((slot) => (
                                     <div key={slot.id} className="card" style={{ margin: 0 }}>
                                       <div className="card-content" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
@@ -658,9 +676,18 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                         <button
                                           type="button"
                                           className="btn btn-ghost"
-                                          style={{ color: 'var(--destructive)', background: 'rgba(239, 68, 68, 0.05)' }}
+                                          title="Supprimer"
+                                          aria-label="Supprimer"
+                                          style={{ color: 'var(--destructive)', background: 'rgba(239, 68, 68, 0.05)', flex: '0 0 auto' }}
                                           onClick={async () => {
-                                            if (!window.confirm('Supprimer ce créneau ?')) return;
+                                            const ok = await toast.confirm('Supprimer ce créneau ?', {
+                                              title: 'Supprimer le créneau',
+                                              confirmLabel: 'Supprimer',
+                                              cancelLabel: 'Annuler',
+                                              confirmVariant: 'danger',
+                                              cancelVariant: 'outline',
+                                            });
+                                            if (!ok) return;
                                             try {
                                               await deleteDoctorSlot(slot.id);
                                               await loadSlots(slotsDate);
@@ -670,7 +697,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                             }
                                           }}
                                         >
-                                          Supprimer
+                                          <Trash2 size={16} />
                                         </button>
                                       </div>
                                     </div>
