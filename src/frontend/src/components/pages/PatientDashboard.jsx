@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, TrendingUp, Heart, Plus, Search } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
+import { useToast } from '../ui/useToast.js';
 import {
   getPatientStats,
   getPatientAppointments,
@@ -46,6 +47,7 @@ function getAppointmentStatus(dateStr, timeStr) {
 }
 
 export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]); // upcoming
@@ -128,7 +130,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
 
   const handleSaveEdit = async (appointmentId) => {
     if (!editDate || !editTime) {
-      alert("Veuillez sélectionner une date et une heure valides.");
+      toast.error("Veuillez sélectionner une date et une heure valides.");
       return;
     }
     try {
@@ -140,7 +142,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
       await loadData();
     } catch (error) {
       console.error("Erreur lors de la modification de l'appointment:", error);
-      alert("Une erreur est survenue lors de la modification. Veuillez réessayer.");
+      toast.error("Une erreur est survenue lors de la modification. Veuillez réessayer.");
     }
   };
 
@@ -151,7 +153,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
         await loadData();
       } catch (error) {
         console.error("Erreur lors de l'annulation de l'appointment:", error);
-        alert("Une erreur est survenue lors de l'annulation. Veuillez réessayer.");
+        toast.error("Une erreur est survenue lors de l'annulation. Veuillez réessayer.");
       }
     }
   };

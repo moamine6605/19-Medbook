@@ -16,6 +16,28 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminDashboardController extends Controller
 {
     private const CONSULTATION_FEE = 50; // € per completed appointment
+    private const SPECIALTIES = [
+        'Cardiologue',
+        'Neurologue',
+        'Pédiatre',
+        'Dermatologue',
+        'Orthopédiste',
+        'Médecin généraliste',
+        'Ophtalmologue',
+        'ORL',
+        'Gynécologue',
+        'Urologue',
+        'Pneumologue',
+        'Gastro-entérologue',
+        'Rhumatologue',
+        'Endocrinologue',
+        'Psychiatre',
+        'Chirurgien',
+        'Radiologue',
+        'Anesthésiste',
+        'Oncologue',
+        'Néphrologue',
+    ];
 
     private static array $frenchMonths = [
         1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr',
@@ -473,12 +495,12 @@ class AdminDashboardController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
-            'birth_date' => ['nullable', 'date'],
+            'birth_date' => ['required', 'date'],
         ];
 
         // If the migration hasn't run yet, don't validate/accept this field to avoid 500s.
         if (Schema::hasColumn('users', 'blood_type')) {
-            $rules['blood_type'] = ['nullable', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])];
+            $rules['blood_type'] = ['required', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])];
         }
 
         $data = $request->validate($rules);
@@ -488,8 +510,8 @@ class AdminDashboardController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => 'patient',
-            'birth_date' => $data['birth_date'] ?? null,
-            'blood_type' => Schema::hasColumn('users', 'blood_type') ? ($data['blood_type'] ?? null) : null,
+            'birth_date' => $data['birth_date'],
+            'blood_type' => Schema::hasColumn('users', 'blood_type') ? $data['blood_type'] : null,
         ]);
 
         return response()->json([
@@ -509,9 +531,8 @@ class AdminDashboardController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
-            'specialty' => ['required', 'string', 'max:255'],
+            'specialty' => ['required', 'string', 'max:255', Rule::in(self::SPECIALTIES)],
             'experience' => ['required', 'string', 'max:255'],
-            'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'is_featured' => ['nullable', 'boolean'],
         ]);
 
@@ -527,7 +548,8 @@ class AdminDashboardController extends Controller
             'name' => $data['name'],
             'specialty' => $data['specialty'],
             'experience' => $data['experience'],
-            'rating' => $data['rating'] ?? 4.5,
+            'rating' => 0.0,
+            'reviews' => 0,
             'is_featured' => (bool) ($data['is_featured'] ?? false),
         ]);
 
@@ -596,7 +618,8 @@ class AdminDashboardController extends Controller
                         'name' => $user->name,
                         'specialty' => 'Médecin généraliste',
                         'experience' => '1 an',
-                        'rating' => 4.5,
+                        'rating' => 0.0,
+                        'reviews' => 0,
                         'is_featured' => false,
                     ]);
                 }

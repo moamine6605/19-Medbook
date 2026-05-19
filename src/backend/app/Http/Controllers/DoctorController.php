@@ -8,6 +8,7 @@ use App\Models\DoctorSlot;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class DoctorController extends Controller
 {
@@ -102,7 +103,10 @@ class DoctorController extends Controller
 
         $doctors = $query->limit(20)->get()->map(function ($doctor) {
             $today = Carbon::today()->toDateString();
-            $totalSlotsToday = DoctorSlot::where('doctor_id', $doctor->id)->whereDate('date', $today)->count();
+            $totalSlotsToday = 0;
+            if (Schema::hasTable('doctor_slots')) {
+                $totalSlotsToday = DoctorSlot::where('doctor_id', $doctor->id)->whereDate('date', $today)->count();
+            }
             $bookedToday = Appointment::where('doctor_id', $doctor->id)->whereDate('date', $today)->count();
             $freeToday = max(0, $totalSlotsToday - $bookedToday);
 

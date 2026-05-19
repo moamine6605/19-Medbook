@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
@@ -26,12 +26,16 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [createKey, setCreateKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const lastRefreshKeyRef = useRef(refreshKey);
 
   useEffect(() => {
     let cancelled = false;
-    const t = setTimeout(async () => {
-      setLoading(true);
+    let debounce = null;
+
+    const load = async (showLoading) => {
+      if (showLoading) setLoading(true);
       try {
         const [items, activity] = await Promise.all([
           getAdminPatients({ q }),
@@ -44,10 +48,24 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
         console.error('Erreur lors du chargement des patients:', e);
         if (!cancelled) setPatients([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && showLoading) setLoading(false);
       }
-    }, 250);
-    return () => { cancelled = true; clearTimeout(t); };
+    };
+
+    const isManualRefresh = lastRefreshKeyRef.current !== refreshKey;
+    lastRefreshKeyRef.current = refreshKey;
+    if (isManualRefresh) {
+      load(true);
+    } else {
+      debounce = setTimeout(() => load(true), 250);
+    }
+    const interval = setInterval(() => load(false), 5000);
+
+    return () => {
+      cancelled = true;
+      if (debounce) clearTimeout(debounce);
+      clearInterval(interval);
+    };
   }, [q, refreshKey]);
 
   return (
@@ -68,7 +86,7 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
             <h3 className="card-title">Liste des patients</h3>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>Ajouter</button>
+              <button type="button" className="btn btn-primary" onClick={() => { setCreateKey((k) => k + 1); setCreateOpen(true); }}>Ajouter</button>
               <button type="button" className="btn btn-ghost" onClick={() => navigate('/admin/dashboard')}>Retour au dashboard</button>
             </div>
           </div>
@@ -115,7 +133,9 @@ export function AdminPatientsPage({ onLogout, user, onHomeClick }) {
       </div>
 
       <AdminCreateModal
+        key={createKey}
         open={createOpen}
+        kind="patient"
         onClose={() => setCreateOpen(false)}
         onCreated={() => setRefreshKey((k) => k + 1)}
       />

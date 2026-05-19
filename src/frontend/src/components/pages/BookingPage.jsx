@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, Check } from 'lucide-react';
 import { getSpecialties, getDoctorsBySpecialty, createAppointment, getDoctorAvailability } from '../../services/api';
+import { useToast } from '../ui/useToast.js';
 import '../../styles/pages/BookingPage.css';
 
 function getInitials(name = 'User') {
@@ -11,6 +12,7 @@ function getInitials(name = 'User') {
 
 
 export function BookingPage({ onBookingComplete }) {
+  const toast = useToast();
   const [step, setStep] = useState(1);
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [selectedSpecialtyName, setSelectedSpecialtyName] = useState('');
@@ -111,7 +113,7 @@ export function BookingPage({ onBookingComplete }) {
       onBookingComplete?.();
     } catch (error) {
       console.error("Erreur lors de la création du rendez-vous:", error);
-      alert("Une erreur est survenue lors de la réservation. Veuillez réinstaller ou réessayer.");
+      toast.error("Une erreur est survenue lors de la réservation. Veuillez réessayer.");
     }
   };
 

@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const API_BASE_URL =
+    (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ?
+        import.meta.env.VITE_API_BASE_URL :
+        'http://127.0.0.1:8000/api';
+
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api',
+    baseURL: API_BASE_URL,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
@@ -101,8 +106,23 @@ export const getDoctorTodayAppointments = async () => {
     return response.data;
 };
 
+export const getDoctorAppointments = async ({ scope = 'today' } = {}) => {
+    const response = await api.get('/doctor/appointments', { params: { scope } });
+    return response.data;
+};
+
+export const updateDoctorAppointmentStatus = async (appointmentId, status) => {
+    const response = await api.patch(`/doctor/appointments/${appointmentId}/status`, { status });
+    return response.data;
+};
+
 export const getDoctorRecentPatients = async () => {
     const response = await api.get('/doctor/patients/recent');
+    return response.data;
+};
+
+export const getDoctorPatientsAll = async ({ q = '' } = {}) => {
+    const response = await api.get('/doctor/patients', { params: { q } });
     return response.data;
 };
 

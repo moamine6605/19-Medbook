@@ -7,6 +7,7 @@ import {
   getAdminDoctors,
   getAdminPatients,
 } from '../../../services/api.js';
+import { BLOOD_TYPES, SPECIALTIES } from '../../../constants/specialties.js';
 import '../../../styles/components/AdminCreateModal.css';
 
 function apiErrorMessage(err) {
@@ -23,8 +24,7 @@ function apiErrorMessage(err) {
   return 'Une erreur est survenue.';
 }
 
-export function AdminCreateModal({ open, onClose, onCreated }) {
-  const [kind, setKind] = useState('appointment'); // appointment|patient|doctor
+export function AdminCreateModal({ open, kind, onClose, onCreated }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,7 +44,6 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
   const [dPassword, setDPassword] = useState('');
   const [dSpecialty, setDSpecialty] = useState('');
   const [dExperience, setDExperience] = useState('');
-  const [dRating, setDRating] = useState('');
 
   // Appointment form
   const [aPatientId, setAPatientId] = useState('');
@@ -56,11 +55,6 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
   const [aReason, setAReason] = useState('');
 
   const needsLists = useMemo(() => open && kind === 'appointment', [open, kind]);
-
-  useEffect(() => {
-    if (!open) return;
-    setError('');
-  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +69,8 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
         if (cancelled) return;
         setPatients(Array.isArray(p) ? p : []);
         setDoctors(Array.isArray(d) ? d : []);
-      } catch (e) {
+      } catch (err) {
+        console.error('Erreur chargement listes admin:', err);
         if (!cancelled) {
           setPatients([]);
           setDoctors([]);
@@ -96,8 +91,43 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
   }, [open, onClose]);
 
   if (!open) return null;
+  if (!kind) return null;
 
   const submit = async () => {
+    // Client-side required fields so we don't fire requests that will 422 and feel "not saved".
+    if (kind === 'doctor') {
+      if (!dName.trim() || !dEmail.trim() || !dPassword) {
+        setError('Veuillez remplir le nom, email et mot de passe.');
+        return;
+      }
+      if (!dSpecialty) {
+        setError('Veuillez sélectionner une spécialité.');
+        return;
+      }
+      if (!dExperience.trim()) {
+        setError('Veuillez renseigner l’expérience.');
+        return;
+      }
+    }
+    if (kind === 'appointment') {
+      if (!aPatientId) {
+        setError('Veuillez sélectionner un patient.');
+        return;
+      }
+      if (!aDoctorId) {
+        setError('Veuillez sélectionner un médecin.');
+        return;
+      }
+      if (!aDate) {
+        setError('Veuillez choisir une date.');
+        return;
+      }
+      if (!aTime) {
+        setError('Veuillez choisir une heure.');
+        return;
+      }
+    }
+
     setBusy(true);
     setError('');
     try {
@@ -106,8 +136,8 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
           name: pName,
           email: pEmail,
           password: pPassword,
-          birth_date: pBirthDate || null,
-          blood_type: pBloodType || null,
+          birth_date: pBirthDate,
+          blood_type: pBloodType,
         });
       } else if (kind === 'doctor') {
         await createAdminDoctor({
@@ -116,7 +146,6 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
           password: dPassword,
           specialty: dSpecialty,
           experience: dExperience,
-          rating: dRating === '' ? null : Number(dRating),
         });
       } else {
         await createAdminAppointment({
@@ -132,8 +161,8 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
 
       onCreated?.(kind);
       onClose?.();
-    } catch (e) {
-      setError(apiErrorMessage(e));
+    } catch (err) {
+      setError(apiErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -149,17 +178,6 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
           </button>
         </div>
         <div className="acm-body">
-          <div className="acm-grid">
-            <div>
-              <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Type</label>
-              <select className="input" value={kind} onChange={(e) => setKind(e.target.value)} style={{ marginBottom: 0 }}>
-                <option value="appointment">Rendez-vous</option>
-                <option value="patient">Patient</option>
-                <option value="doctor">Médecin</option>
-              </select>
-            </div>
-          </div>
-
           {kind === 'patient' && (
             <div className="acm-grid" style={{ marginTop: '0.75rem' }}>
               <div>
@@ -175,21 +193,16 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
                 <input className="input" style={{ marginBottom: 0 }} type="password" value={pPassword} onChange={(e) => setPPassword(e.target.value)} />
               </div>
               <div>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Date de naissance (optionnel)</label>
+                <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Date de naissance</label>
                 <input className="input" style={{ marginBottom: 0 }} type="date" value={pBirthDate} onChange={(e) => setPBirthDate(e.target.value)} />
               </div>
               <div>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Groupe sanguin (optionnel)</label>
+                <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Groupe sanguin</label>
                 <select className="input" style={{ marginBottom: 0 }} value={pBloodType} onChange={(e) => setPBloodType(e.target.value)}>
                   <option value="">Sélectionner...</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
+                  {BLOOD_TYPES.map((bt) => (
+                    <option key={bt} value={bt}>{bt}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -211,15 +224,16 @@ export function AdminCreateModal({ open, onClose, onCreated }) {
               </div>
               <div>
                 <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Spécialité</label>
-                <input className="input" style={{ marginBottom: 0 }} value={dSpecialty} onChange={(e) => setDSpecialty(e.target.value)} />
+                <select className="input" style={{ marginBottom: 0 }} value={dSpecialty} onChange={(e) => setDSpecialty(e.target.value)}>
+                  <option value="">Sélectionner...</option>
+                  {SPECIALTIES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Expérience</label>
                 <input className="input" style={{ marginBottom: 0 }} placeholder="ex: 8 ans" value={dExperience} onChange={(e) => setDExperience(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Note (optionnel)</label>
-                <input className="input" style={{ marginBottom: 0 }} type="number" step="0.1" min="0" max="5" value={dRating} onChange={(e) => setDRating(e.target.value)} />
               </div>
             </div>
           )}

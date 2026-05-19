@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
-use App\Models\DoctorSlot;
 use App\Models\Prescription;
 use App\Models\PatientActivity;
 use App\Mail\AppointmentConfirmation;
@@ -14,6 +13,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PatientController extends Controller
 {
+    private const DEFAULT_TIMES = [
+        '08:00', '08:30',
+        '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30',
+        '14:00', '14:30',
+        '15:00', '15:30',
+        '16:00', '16:30',
+        '17:00',
+    ];
     /**
      * Get patient dashboard stats.
      */
@@ -121,7 +129,7 @@ class PatientController extends Controller
         $request->validate([
             'doctor_id' => 'required|exists:doctors,id',
             'date' => 'required|date_format:Y-m-d',
-            'time' => 'required',
+            'time' => ['required', 'string', 'regex:/^\\d{2}:\\d{2}$/'],
             'type' => 'nullable|in:in-person,video',
             'reason' => 'nullable|string',
         ]);
@@ -129,14 +137,10 @@ class PatientController extends Controller
         $user = $request->user();
         $doctor = \App\Models\Doctor::findOrFail($request->doctor_id);
 
-        // Ensure the doctor actually opened this slot.
-        $slotExists = DoctorSlot::where('doctor_id', $doctor->id)
-            ->whereDate('date', $request->date)
-            ->where('time', $request->time)
-            ->exists();
-        if (!$slotExists) {
+        // All default slots are available; we only prevent double-booking.
+        if (!in_array($request->time, self::DEFAULT_TIMES, true)) {
             return response()->json([
-                'message' => 'Créneau indisponible.',
+                'message' => 'Créneau invalide.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -196,7 +200,7 @@ class PatientController extends Controller
     {
         $request->validate([
             'date' => 'required|date_format:Y-m-d',
-            'time' => 'required',
+            'time' => ['required', 'string', 'regex:/^\\d{2}:\\d{2}$/'],
             'type' => 'nullable|in:in-person,video',
         ]);
 
@@ -205,13 +209,9 @@ class PatientController extends Controller
 
         $doctorId = $appointment->doctor_id;
 
-        $slotExists = DoctorSlot::where('doctor_id', $doctorId)
-            ->whereDate('date', $request->date)
-            ->where('time', $request->time)
-            ->exists();
-        if (!$slotExists) {
+        if (!in_array($request->time, self::DEFAULT_TIMES, true)) {
             return response()->json([
-                'message' => 'Créneau indisponible.',
+                'message' => 'Créneau invalide.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 

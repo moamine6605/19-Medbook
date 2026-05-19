@@ -4,12 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\Doctor;
-use App\Models\DoctorSlot;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DoctorAvailabilityController extends Controller
 {
+    private const DEFAULT_TIMES = [
+        '08:00', '08:30',
+        '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30',
+        '14:00', '14:30',
+        '15:00', '15:30',
+        '16:00', '16:30',
+        '17:00',
+    ];
+
     /**
      * Availability for a specific doctor and date.
      * Returns slot list with booked/available flags so the frontend can disable booked slots.
@@ -22,11 +31,6 @@ class DoctorAvailabilityController extends Controller
 
         $date = Carbon::parse($request->query('date'))->toDateString();
 
-        $slots = DoctorSlot::where('doctor_id', $doctor->id)
-            ->whereDate('date', $date)
-            ->orderBy('time')
-            ->get();
-
         $bookedTimes = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('date', $date)
             ->pluck('time')
@@ -35,12 +39,11 @@ class DoctorAvailabilityController extends Controller
         $booked = array_fill_keys($bookedTimes, true);
 
         return response()->json(
-            $slots->map(fn (DoctorSlot $slot) => [
-                'time' => $slot->time,
-                'booked' => (bool) ($booked[$slot->time] ?? false),
-                'available' => !($booked[$slot->time] ?? false),
+            collect(self::DEFAULT_TIMES)->map(fn (string $time) => [
+                'time' => $time,
+                'booked' => (bool) ($booked[$time] ?? false),
+                'available' => !($booked[$time] ?? false),
             ])->values()
         );
     }
 }
-

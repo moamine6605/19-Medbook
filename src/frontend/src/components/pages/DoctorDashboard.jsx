@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, TrendingUp, Video, MapPin } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
+import { useToast } from '../ui/useToast.js';
 import {
   getDoctorStats,
   getDoctorTodayAppointments,
+  getDoctorAppointments,
+  updateDoctorAppointmentStatus,
   getDoctorRecentPatients,
   getDoctorMonthlySummary,
+  getDoctorPatientsAll,
   getDoctorProfile,
   updateDoctorProfile,
   getDoctorSlots,
@@ -23,10 +27,17 @@ function getInitials(name = 'User') {
 
 
 export function DoctorDashboard({ onLogout, user, onHomeClick }) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
   const [todayAppointments, setTodayAppointments] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [appointmentsScope, setAppointmentsScope] = useState('today'); // today|upcoming|past|all
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [recentPatients, setRecentPatients] = useState([]);
+  const [patientsAll, setPatientsAll] = useState([]);
+  const [patientsQuery, setPatientsQuery] = useState('');
+  const [patientsLoading, setPatientsLoading] = useState(false);
   const [monthlySummary, setMonthlySummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -60,6 +71,45 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     fetchData();
   }, []);
 
+  const refreshToday = async () => {
+    try {
+      const [statsData, appointmentsData] = await Promise.all([
+        getDoctorStats(),
+        getDoctorTodayAppointments(),
+      ]);
+      setStats(statsData);
+      setTodayAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+    } catch (e) {
+      console.error('Erreur refresh today', e);
+    }
+  };
+
+  const loadAppointments = async (scope) => {
+    setAppointmentsLoading(true);
+    try {
+      const data = await getDoctorAppointments({ scope });
+      setAppointments(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Erreur appointments', e);
+      setAppointments([]);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
+  const loadPatientsAll = async () => {
+    setPatientsLoading(true);
+    try {
+      const data = await getDoctorPatientsAll({ q: patientsQuery });
+      setPatientsAll(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Erreur patients', e);
+      setPatientsAll([]);
+    } finally {
+      setPatientsLoading(false);
+    }
+  };
+
   const loadSlots = async (date) => {
     setSlotsLoading(true);
     try {
@@ -73,21 +123,30 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === 'profile') {
-      (async () => {
-        try {
-          const data = await getDoctorProfile();
-          setProfile(data);
-        } catch (e) {
-          console.error('Erreur profile', e);
-        }
-      })();
+  const loadProfile = async () => {
+    try {
+      const data = await getDoctorProfile();
+      setProfile(data);
+    } catch (err) {
+      console.error('Erreur profile', err);
     }
-    if (activeTab === 'schedule') {
+  };
+
+  const handleTabChange = (nextTab) => {
+    setActiveTab(nextTab);
+    if (nextTab === 'profile') {
+      loadProfile();
+    }
+    if (nextTab === 'appointments') {
+      loadAppointments(appointmentsScope);
+    }
+    if (nextTab === 'patients') {
+      loadPatientsAll();
+    }
+    if (nextTab === 'schedule') {
       loadSlots(slotsDate);
     }
-  }, [activeTab]);
+  };
 
   const statCards = [
   {
@@ -126,7 +185,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="doctor" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+            <Sidebar activeTab={activeTab} onTabChange={handleTabChange} userRole="doctor" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
             <div className="main-content">
                 <DashboardHeader
@@ -201,11 +260,43 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                                         <span className="text-muted" style={{ fontSize: '0.75rem' }}>{appointment.type === 'video' ? 'Appel vidéo' : 'En personne'}</span>
                                                     </div>
                                                 </div>
-                                                <div className="dashboard-appointment-actions">
-                                                    {appointment.status === 'upcoming' && <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")}>Démarrer</button>}
-                                                    {appointment.status === 'in-progress' && <button type="button" className={["btn", "btn-success"].filter(Boolean).join(" ")}>Rejoindre</button>}
-                                                    {appointment.status === 'completed' && <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>Notes</button>}
-                                                </div>
+                                                    <div className="dashboard-appointment-actions">
+                                                    {appointment.status === 'upcoming' && (
+                                                      <button
+                                                        type="button"
+                                                        className={["btn", "btn-primary"].filter(Boolean).join(" ")}
+                                                        onClick={async () => {
+                                                          try {
+                                                            await updateDoctorAppointmentStatus(appointment.id, 'in-progress');
+                                                            await refreshToday();
+                                                          } catch (e) {
+                                                            console.error(e);
+                                                            toast.error('Impossible de démarrer ce rendez-vous.');
+                                                          }
+                                                        }}
+                                                      >
+                                                        Démarrer
+                                                      </button>
+                                                    )}
+                                                    {appointment.status === 'in-progress' && (
+                                                      <button
+                                                        type="button"
+                                                        className={["btn", "btn-success"].filter(Boolean).join(" ")}
+                                                        onClick={async () => {
+                                                          try {
+                                                            await updateDoctorAppointmentStatus(appointment.id, 'completed');
+                                                            await refreshToday();
+                                                          } catch (e) {
+                                                            console.error(e);
+                                                            toast.error('Impossible de terminer ce rendez-vous.');
+                                                          }
+                                                        }}
+                                                      >
+                                                        Terminer
+                                                      </button>
+                                                    )}
+                                                    {appointment.status === 'completed' && <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")} disabled>Complété</button>}
+                                                    </div>
                                             </div>
                                         )
                                     ) : (
@@ -282,6 +373,174 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                 </>
                 )}
 
+                {activeTab === 'appointments' && (
+                  <div className="card">
+                    <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+                      <div>
+                        <h3 className="card-title">Mes rendez-vous</h3>
+                        <p className="text-muted" style={{ fontSize: '0.875rem' }}>Gérez l’état de vos rendez-vous.</p>
+                      </div>
+                    </div>
+                    <div className="card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {[
+                          { id: 'today', label: "Aujourd'hui" },
+                          { id: 'upcoming', label: 'À venir' },
+                          { id: 'past', label: 'Terminés' },
+                          { id: 'all', label: 'Tous' },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className={["btn", appointmentsScope === t.id ? "btn-primary" : "btn-outline"].filter(Boolean).join(" ")}
+                            onClick={() => {
+                              setAppointmentsScope(t.id);
+                              loadAppointments(t.id);
+                            }}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => loadAppointments(appointmentsScope)}
+                          disabled={appointmentsLoading}
+                        >
+                          Actualiser
+                        </button>
+                      </div>
+
+                      {appointmentsLoading ? (
+                        <p className="text-muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Chargement...</p>
+                      ) : appointments.length === 0 ? (
+                        <p className="text-muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Aucun rendez-vous.</p>
+                      ) : (
+                        <div className="dashboard-table-container">
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Patient</th>
+                                <th>Type</th>
+                                <th>Statut</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {appointments.map((a) => (
+                                <tr key={a.id}>
+                                  <td>{a.date}</td>
+                                  <td>{a.time || '-'}</td>
+                                  <td>{a.patient?.name || '-'}</td>
+                                  <td className="text-muted">{a.type === 'video' ? 'Vidéo' : 'En personne'}</td>
+                                  <td className="text-muted">
+                                    {a.status === 'upcoming' ? 'Planifié' : a.status === 'in-progress' ? 'En cours' : a.status === 'completed' ? 'Complété' : a.status}
+                                  </td>
+                                  <td>
+                                    {a.status === 'upcoming' ? (
+                                      <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={async () => {
+                                          try {
+                                            await updateDoctorAppointmentStatus(a.id, 'in-progress');
+                                            await loadAppointments(appointmentsScope);
+                                            await refreshToday();
+                                          } catch (e) {
+                                            console.error(e);
+                                            toast.error('Impossible de démarrer.');
+                                          }
+                                        }}
+                                      >
+                                        Démarrer
+                                      </button>
+                                    ) : a.status === 'in-progress' ? (
+                                      <button
+                                        type="button"
+                                        className="btn btn-success"
+                                        onClick={async () => {
+                                          try {
+                                            await updateDoctorAppointmentStatus(a.id, 'completed');
+                                            await loadAppointments(appointmentsScope);
+                                            await refreshToday();
+                                          } catch (e) {
+                                            console.error(e);
+                                            toast.error('Impossible de terminer.');
+                                          }
+                                        }}
+                                      >
+                                        Terminer
+                                      </button>
+                                    ) : (
+                                      <button type="button" className="btn btn-outline" disabled>OK</button>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'patients' && (
+                  <div className="card">
+                    <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+                      <div>
+                        <h3 className="card-title">Patients</h3>
+                        <p className="text-muted" style={{ fontSize: '0.875rem' }}>Tous les patients que vous avez vus (rendez-vous complétés).</p>
+                      </div>
+                    </div>
+                    <div className="card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <input
+                          className="input"
+                          style={{ marginBottom: 0, minWidth: '240px', flex: 1 }}
+                          placeholder="Rechercher un patient..."
+                          value={patientsQuery}
+                          onChange={(e) => setPatientsQuery(e.target.value)}
+                        />
+                        <button type="button" className="btn btn-primary" onClick={loadPatientsAll} disabled={patientsLoading}>
+                          Rechercher
+                        </button>
+                      </div>
+
+                      {patientsLoading ? (
+                        <p className="text-muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Chargement...</p>
+                      ) : patientsAll.length === 0 ? (
+                        <p className="text-muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Aucun patient.</p>
+                      ) : (
+                        <div className="dashboard-table-container">
+                          <table className="dashboard-table">
+                            <thead>
+                              <tr>
+                                <th>Nom</th>
+                                <th>Age</th>
+                                <th>Visites</th>
+                                <th>Derniere visite</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {patientsAll.map((p) => (
+                                <tr key={p.id}>
+                                  <td>{p.name}</td>
+                                  <td className="text-muted">{p.age ?? '-'}</td>
+                                  <td className="text-muted">{p.visits ?? 0}</td>
+                                  <td className="text-muted">{p.last_visit || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === 'schedule' && (
                     <div className="card">
                         <div className="card-header flex flex-col gap-2 dashboard-card-header-flex" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
@@ -323,7 +582,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                       await loadSlots(slotsDate);
                                     } catch (e) {
                                       console.error(e);
-                                      alert("Impossible d'ajouter ce créneau (déjà existant ?).");
+                                      toast.error("Impossible d'ajouter ce créneau (déjà existant ?).");
                                     }
                                   }}
                                 >
@@ -350,7 +609,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                               await loadSlots(slotsDate);
                                             } catch (e) {
                                               console.error(e);
-                                              alert('Créneau déjà réservé.');
+                                              toast.error('Créneau déjà réservé.');
                                             }
                                           }}
                                         >
@@ -411,10 +670,10 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                         address: profile?.address || null,
                                         bio: profile?.bio || null,
                                       });
-                                      alert('Profil mis à jour.');
+                                      toast.success('Profil mis à jour.');
                                     } catch (e) {
                                       console.error(e);
-                                      alert('Erreur lors de la mise à jour.');
+                                      toast.error('Erreur lors de la mise à jour.');
                                     } finally {
                                       setProfileSaving(false);
                                     }

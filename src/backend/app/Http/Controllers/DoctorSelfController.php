@@ -7,6 +7,7 @@ use App\Models\Doctor;
 use App\Models\DoctorSlot;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,9 +22,9 @@ class DoctorSelfController extends Controller
             'name' => $doctor->name,
             'specialty' => $doctor->specialty,
             'experience' => $doctor->experience,
-            'phone' => $doctor->phone,
-            'address' => $doctor->address,
-            'bio' => $doctor->bio,
+            'phone' => Schema::hasColumn('doctors', 'phone') ? $doctor->phone : null,
+            'address' => Schema::hasColumn('doctors', 'address') ? $doctor->address : null,
+            'bio' => Schema::hasColumn('doctors', 'bio') ? $doctor->bio : null,
             'rating' => $doctor->rating,
             'reviews' => $doctor->reviews,
         ]);
@@ -33,13 +34,23 @@ class DoctorSelfController extends Controller
     {
         $doctor = $this->doctorFor($request);
 
-        $data = $request->validate([
+        $rules = [
             'specialty' => ['nullable', 'string', 'max:255'],
             'experience' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'bio' => ['nullable', 'string', 'max:2000'],
-        ]);
+        ];
+
+        // These columns may not exist if migrations haven't been run in the current DB.
+        if (Schema::hasColumn('doctors', 'phone')) {
+            $rules['phone'] = ['nullable', 'string', 'max:30'];
+        }
+        if (Schema::hasColumn('doctors', 'address')) {
+            $rules['address'] = ['nullable', 'string', 'max:255'];
+        }
+        if (Schema::hasColumn('doctors', 'bio')) {
+            $rules['bio'] = ['nullable', 'string', 'max:2000'];
+        }
+
+        $data = $request->validate($rules);
 
         $doctor->fill(array_filter($data, fn ($v) => $v !== null));
         $doctor->save();
@@ -50,6 +61,10 @@ class DoctorSelfController extends Controller
     public function slots(Request $request)
     {
         $doctor = $this->doctorFor($request);
+
+        if (!Schema::hasTable('doctor_slots')) {
+            return response()->json([], Response::HTTP_OK);
+        }
 
         $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
@@ -72,6 +87,10 @@ class DoctorSelfController extends Controller
     public function addSlot(Request $request)
     {
         $doctor = $this->doctorFor($request);
+
+        if (!Schema::hasTable('doctor_slots')) {
+            abort(Response::HTTP_SERVICE_UNAVAILABLE, 'Slots table missing. Run migrations.');
+        }
 
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
@@ -97,6 +116,10 @@ class DoctorSelfController extends Controller
     public function deleteSlot(Request $request, DoctorSlot $slot)
     {
         $doctor = $this->doctorFor($request);
+
+        if (!Schema::hasTable('doctor_slots')) {
+            abort(Response::HTTP_SERVICE_UNAVAILABLE, 'Slots table missing. Run migrations.');
+        }
 
         if ($slot->doctor_id !== $doctor->id) {
             abort(Response::HTTP_FORBIDDEN, 'Not your slot.');
@@ -129,4 +152,3 @@ class DoctorSelfController extends Controller
         return Doctor::where('user_id', $user->id)->firstOrFail();
     }
 }
-

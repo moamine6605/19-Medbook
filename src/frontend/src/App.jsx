@@ -11,6 +11,7 @@ import { AdminAppointmentsPage } from "./components/pages/admin/AdminAppointment
 import { AdminPatientsPage } from "./components/pages/admin/AdminPatientsPage.jsx";
 import { AdminDoctorsPage } from "./components/pages/admin/AdminDoctorsPage.jsx";
 import { login, register, logout, getUser } from './services/api';
+import { ToastProvider } from './components/ui/ToastProvider.jsx';
 
 
 
@@ -20,16 +21,17 @@ function App() {
   const [user, setUser] = useState(null);
 
   return (
-      <BrowserRouter>
-        <AppRoutes
-            isAuthenticated={isAuthenticated}
-            userRole={userRole}
-            user={user}
-            setIsAuthenticated={setIsAuthenticated}
-            setUserRole={setUserRole}
-            setUser={setUser} />
-
-      </BrowserRouter>);
+      <ToastProvider>
+        <BrowserRouter>
+          <AppRoutes
+              isAuthenticated={isAuthenticated}
+              userRole={userRole}
+              user={user}
+              setIsAuthenticated={setIsAuthenticated}
+              setUserRole={setUserRole}
+              setUser={setUser} />
+        </BrowserRouter>
+      </ToastProvider>);
 
 }
 

@@ -54,7 +54,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Doctor dashboard routes
     Route::get('/doctor/stats', [DoctorDashboardController::class, 'stats']);
     Route::get('/doctor/appointments/today', [DoctorDashboardController::class, 'todayAppointments']);
+    Route::get('/doctor/appointments', [DoctorDashboardController::class, 'appointments']);
+    Route::patch('/doctor/appointments/{appointment}/status', [DoctorDashboardController::class, 'updateAppointmentStatus']);
     Route::get('/doctor/patients/recent', [DoctorDashboardController::class, 'recentPatients']);
+    Route::get('/doctor/patients', [DoctorDashboardController::class, 'patients']);
     Route::get('/doctor/monthly-summary', [DoctorDashboardController::class, 'monthlySummary']);
 
     // Admin dashboard routes
