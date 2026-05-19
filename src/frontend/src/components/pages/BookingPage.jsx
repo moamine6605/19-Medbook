@@ -11,7 +11,7 @@ function getInitials(name = 'User') {
 
 
 
-export function BookingPage({ onBookingComplete }) {
+export function BookingPage({ isAuthenticated, onBookingComplete }) {
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
@@ -103,6 +103,11 @@ export function BookingPage({ onBookingComplete }) {
   };
 
   const handleComplete = async () => {
+    if (!isAuthenticated) {
+      onBookingComplete?.();
+      return;
+    }
+
     try {
       await createAppointment({
         doctor_id: selectedDoctor?.id,

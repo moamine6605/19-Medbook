@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, Users, TrendingUp, Video, MapPin } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { useToast } from '../ui/useToast.js';
+import { onEvent } from '../../services/events.js';
 import {
   getDoctorStats,
   getDoctorTodayAppointments,
@@ -49,6 +50,16 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
 
   const userName = user?.name || 'Docteur';
 
+  const activeTabRef = useRef(activeTab);
+  const appointmentsScopeRef = useRef(appointmentsScope);
+  const slotsDateRef = useRef(slotsDate);
+  const patientsQueryRef = useRef(patientsQuery);
+
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { appointmentsScopeRef.current = appointmentsScope; }, [appointmentsScope]);
+  useEffect(() => { slotsDateRef.current = slotsDate; }, [slotsDate]);
+  useEffect(() => { patientsQueryRef.current = patientsQuery; }, [patientsQuery]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,20 +82,68 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     fetchData();
   }, []);
 
-  const refreshToday = async () => {
+  // Keep doctor UI consistent when data changes elsewhere (admin/patient actions).
+  useEffect(() => {
+    const offs = [];
+
+    offs.push(onEvent('doctor:appointments:changed', () => {
+      refreshDashboardData();
+      if (activeTabRef.current === 'appointments') {
+        loadAppointments(appointmentsScopeRef.current);
+      }
+      if (activeTabRef.current === 'patients') {
+        loadPatientsAll();
+      }
+    }));
+
+    offs.push(onEvent('doctor:slots:changed', () => {
+      if (activeTabRef.current === 'schedule') {
+        loadSlots(slotsDateRef.current);
+      }
+    }));
+
+    offs.push(onEvent('doctor:profile:changed', () => {
+      if (activeTabRef.current === 'profile') {
+        loadProfile();
+      }
+    }));
+
+    return () => offs.forEach((off) => off());
+  }, []);
+
+  async function refreshDashboardData() {
     try {
-      const [statsData, appointmentsData] = await Promise.all([
+      const [statsData, appointmentsData, patientsData, summaryData] = await Promise.all([
         getDoctorStats(),
         getDoctorTodayAppointments(),
+        getDoctorRecentPatients(),
+        getDoctorMonthlySummary(),
       ]);
       setStats(statsData);
       setTodayAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+      setRecentPatients(Array.isArray(patientsData) ? patientsData : []);
+      setMonthlySummary(summaryData || null);
     } catch (e) {
       console.error('Erreur refresh today', e);
     }
-  };
+  }
 
-  const loadAppointments = async (scope) => {
+  async function afterAppointmentStatusChange(newStatus) {
+    // Keep all tabs consistent after a mutation.
+    await refreshDashboardData();
+
+    // If appointments tab data is present (or user is on it), refresh it.
+    if (activeTab === 'appointments' || appointments.length > 0) {
+      await loadAppointments(appointmentsScope);
+    }
+
+    // Patients tab is based on completed appointments; refresh it after completion.
+    if (newStatus === 'completed' && (activeTab === 'patients' || patientsAll.length > 0)) {
+      await loadPatientsAll();
+    }
+  }
+
+  async function loadAppointments(scope) {
     setAppointmentsLoading(true);
     try {
       const data = await getDoctorAppointments({ scope });
@@ -95,12 +154,12 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     } finally {
       setAppointmentsLoading(false);
     }
-  };
+  }
 
-  const loadPatientsAll = async () => {
+  async function loadPatientsAll() {
     setPatientsLoading(true);
     try {
-      const data = await getDoctorPatientsAll({ q: patientsQuery });
+      const data = await getDoctorPatientsAll({ q: patientsQueryRef.current });
       setPatientsAll(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Erreur patients', e);
@@ -108,9 +167,9 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     } finally {
       setPatientsLoading(false);
     }
-  };
+  }
 
-  const loadSlots = async (date) => {
+  async function loadSlots(date) {
     setSlotsLoading(true);
     try {
       const data = await getDoctorSlots(date);
@@ -121,16 +180,16 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
     } finally {
       setSlotsLoading(false);
     }
-  };
+  }
 
-  const loadProfile = async () => {
+  async function loadProfile() {
     try {
       const data = await getDoctorProfile();
       setProfile(data);
     } catch (err) {
       console.error('Erreur profile', err);
     }
-  };
+  }
 
   const handleTabChange = (nextTab) => {
     setActiveTab(nextTab);
@@ -268,7 +327,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                                         onClick={async () => {
                                                           try {
                                                             await updateDoctorAppointmentStatus(appointment.id, 'in-progress');
-                                                            await refreshToday();
+                                                            await afterAppointmentStatusChange('in-progress');
                                                           } catch (e) {
                                                             console.error(e);
                                                             toast.error('Impossible de démarrer ce rendez-vous.');
@@ -285,7 +344,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                                         onClick={async () => {
                                                           try {
                                                             await updateDoctorAppointmentStatus(appointment.id, 'completed');
-                                                            await refreshToday();
+                                                            await afterAppointmentStatusChange('completed');
                                                           } catch (e) {
                                                             console.error(e);
                                                             toast.error('Impossible de terminer ce rendez-vous.');
@@ -446,8 +505,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                         onClick={async () => {
                                           try {
                                             await updateDoctorAppointmentStatus(a.id, 'in-progress');
-                                            await loadAppointments(appointmentsScope);
-                                            await refreshToday();
+                                            await afterAppointmentStatusChange('in-progress');
                                           } catch (e) {
                                             console.error(e);
                                             toast.error('Impossible de démarrer.');
@@ -463,8 +521,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                         onClick={async () => {
                                           try {
                                             await updateDoctorAppointmentStatus(a.id, 'completed');
-                                            await loadAppointments(appointmentsScope);
-                                            await refreshToday();
+                                            await afterAppointmentStatusChange('completed');
                                           } catch (e) {
                                             console.error(e);
                                             toast.error('Impossible de terminer.');
@@ -671,6 +728,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                                         bio: profile?.bio || null,
                                       });
                                       toast.success('Profil mis à jour.');
+                                      await loadProfile();
                                     } catch (e) {
                                       console.error(e);
                                       toast.error('Erreur lors de la mise à jour.');

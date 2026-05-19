@@ -10,6 +10,7 @@ import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
 import { AdminAppointmentsPage } from "./components/pages/admin/AdminAppointmentsPage.jsx";
 import { AdminPatientsPage } from "./components/pages/admin/AdminPatientsPage.jsx";
 import { AdminDoctorsPage } from "./components/pages/admin/AdminDoctorsPage.jsx";
+import { AdminArchivePage } from "./components/pages/admin/AdminArchivePage.jsx";
 import { login, register, logout, getUser } from './services/api';
 import { ToastProvider } from './components/ui/ToastProvider.jsx';
 
@@ -227,6 +228,16 @@ function AppRoutes({ isAuthenticated, userRole, user, setIsAuthenticated, setUse
             element={
               isAuthenticated && userRole === 'admin' ?
                   <AdminDoctorsPage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
+
+                  <Navigate to="/login" />
+
+            } />
+
+        <Route
+            path="/admin/archive"
+            element={
+              isAuthenticated && userRole === 'admin' ?
+                  <AdminArchivePage user={user} onLogout={handleLogout} onHomeClick={() => navigate('/')} /> :
 
                   <Navigate to="/login" />
 

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { MoreVertical } from 'lucide-react';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
-import { getAdminDoctors, getAdminActivity } from '../../../services/api.js';
+import { archiveAdminDoctor, getAdminDoctors, getAdminActivity, adminUpdateUser } from '../../../services/api.js';
 import { AdminCreateModal } from './AdminCreateModal.jsx';
+import { useToast } from '../../ui/useToast.js';
 import '../../../styles/pages/Dashboard.css';
 
 function ratingLabel(r) {
@@ -13,8 +15,18 @@ function ratingLabel(r) {
   return n.toFixed(1);
 }
 
+function isDoctorActive(doctor) {
+  return doctor.status === 'Actif' || doctor.is_active === true;
+}
+
+function statusBadgeClass(doctor) {
+  if (doctor.status === 'Inactif') return 'badge-secondary';
+  return isDoctorActive(doctor) ? 'badge-success' : 'badge-secondary';
+}
+
 export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const userName = user?.name || 'Administrateur';
 
   const [doctors, setDoctors] = useState([]);
@@ -27,6 +39,8 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
   const [createKey, setCreateKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const lastRefreshKeyRef = useRef(refreshKey);
+  const [menuFor, setMenuFor] = useState(null);
+  const [updatingDoctorId, setUpdatingDoctorId] = useState(null);
 
   const requestParams = useMemo(() => ({ q, min_rating: minRating }), [q, minRating]);
 
@@ -71,7 +85,7 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
   }, [requestParams, refreshKey]);
 
   return (
-    <div className="app-container">
+    <div className="app-container" onClick={() => setMenuFor(null)}>
       <Sidebar userRole="admin" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
 
       <div className="main-content">
@@ -125,10 +139,16 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
                       <th>Avis</th>
                       <th>Exp.</th>
                       <th>Statut</th>
+                      <th>Action</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {doctors.map((d) => (
+                    {doctors.filter((d) => d.status !== 'Inactif').map((d) => {
+                      const active = isDoctorActive(d);
+                      const nextActive = !active;
+
+                      return (
                       <tr key={d.id}>
                         <td>{d.name}</td>
                         <td className="text-muted">{d.specialty || '-'}</td>
@@ -141,10 +161,88 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
                         <td className="text-muted">{d.reviews ?? '-'}</td>
                         <td className="text-muted">{d.experience || '-'}</td>
                         <td>
-                          <span className={`badge ${d.status === 'Actif' ? 'badge-success' : 'badge-secondary'}`}>{d.status}</span>
+                          <span className={`badge ${statusBadgeClass(d)}`}>{d.status}</span>
+                        </td>
+                        <td>
+                          {d.user_id ? (
+                            <button
+                              type="button"
+                              className={["btn", active ? "btn-danger" : "btn-primary"].filter(Boolean).join(" ")}
+                              disabled={updatingDoctorId === d.id}
+                              onClick={async () => {
+                                const previousDoctors = doctors;
+                                setUpdatingDoctorId(d.id);
+                                setDoctors((items) => items.map((item) => (
+                                  item.id === d.id
+                                    ? { ...item, is_active: nextActive, status: nextActive ? 'Actif' : 'Désactivé' }
+                                    : item
+                                )));
+
+                                try {
+                                  await adminUpdateUser(d.user_id, { is_active: nextActive });
+                                  toast.success(active ? 'Médecin désactivé.' : 'Médecin activé.');
+                                  setRefreshKey((k) => k + 1);
+                                } catch (e) {
+                                  console.error(e);
+                                  setDoctors(previousDoctors);
+                                  toast.error('Impossible de changer le statut.');
+                                } finally {
+                                  setUpdatingDoctorId(null);
+                                }
+                              }}
+                            >
+                              {active ? 'Désactiver' : 'Activer'}
+                            </button>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td style={{ width: '48px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            aria-label="Actions"
+                            onClick={() => setMenuFor((cur) => (cur === d.id ? null : d.id))}
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          {menuFor === d.id ? (
+                            <div style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: 'calc(100% + 6px)',
+                              background: 'var(--background)',
+                              border: '1px solid var(--border)',
+                              borderRadius: '0.5rem',
+                              boxShadow: 'var(--shadow)',
+                              zIndex: 20,
+                              minWidth: '180px',
+                              padding: '0.25rem',
+                            }}>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ width: '100%', justifyContent: 'flex-start' }}
+                                onClick={async () => {
+                                  try {
+                                    await archiveAdminDoctor(d.id);
+                                    toast.success('Médecin archivé.');
+                                    setMenuFor(null);
+                                    setRefreshKey((k) => k + 1);
+                                  } catch (e) {
+                                    console.error(e);
+                                    toast.error('Impossible d’archiver.');
+                                  }
+                                }}
+                              >
+                                Envoyer a l'archive
+                              </button>
+                            </div>
+                          ) : null}
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -41,6 +41,8 @@ class DoctorController extends Controller
     public function featured()
     {
         $doctors = Doctor::where('is_featured', true)
+            ->where('status', 'actif')
+            ->whereDoesntHave('archivedRecord')
             ->orderByDesc('rating')
             ->limit(6)
             ->get();
@@ -53,11 +55,15 @@ class DoctorController extends Controller
      */
     public function publicStats()
     {
-        $doctorCount = Doctor::count();
+        $doctorCount = Doctor::where('status', 'actif')
+            ->whereDoesntHave('archivedRecord')
+            ->count();
         $patientCount = User::where('role', 'patient')->count();
 
         // Calculate average rating across all doctors
-        $averageRating = Doctor::avg('rating');
+        $averageRating = Doctor::where('status', 'actif')
+            ->whereDoesntHave('archivedRecord')
+            ->avg('rating');
 
         return response()->json([
             'doctors_count' => $doctorCount,
@@ -72,6 +78,8 @@ class DoctorController extends Controller
     public function specialties()
     {
         $specialties = Doctor::select('specialty')
+            ->where('status', 'actif')
+            ->whereDoesntHave('archivedRecord')
             ->selectRaw('COUNT(*) as count')
             ->groupBy('specialty')
             ->orderByDesc('count')
@@ -95,7 +103,9 @@ class DoctorController extends Controller
     {
         $specialty = $request->query('specialty');
 
-        $query = Doctor::orderByDesc('rating');
+        $query = Doctor::where('status', 'actif')
+            ->whereDoesntHave('archivedRecord')
+            ->orderByDesc('rating');
 
         if ($specialty) {
             $query->where('specialty', $specialty);

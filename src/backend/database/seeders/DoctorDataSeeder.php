@@ -42,43 +42,41 @@ class DoctorDataSeeder extends Seeder
     }
 
     /**
-     * Create user accounts for the 3 featured doctors and link them.
+     * Create user accounts for every doctor and link them.
      */
     private function createDoctorUserAccounts(): void
     {
-        $doctorAccounts = [
-            ['email' => 'doctor@demo.com', 'doctor_name' => 'Dr. Sarah Johnson'],
-            ['email' => 'doctor2@demo.com', 'doctor_name' => 'Dr. Michael Chen'],
-            ['email' => 'doctor3@demo.com', 'doctor_name' => 'Dr. Emily Williams'],
+        $demoAccounts = [
+            'Dr. Sarah Johnson' => 'doctor@demo.com',
+            'Dr. Michael Chen' => 'doctor2@demo.com',
+            'Dr. Emily Williams' => 'doctor3@demo.com',
         ];
 
-        foreach ($doctorAccounts as $account) {
-            $doctor = Doctor::where('name', $account['doctor_name'])->first();
-            if (!$doctor) continue;
+        Doctor::orderBy('id')->chunkById(100, function ($doctors) use ($demoAccounts) {
+            foreach ($doctors as $doctor) {
+                if ($doctor->user_id) {
+                    continue;
+                }
 
-            $user = User::firstOrCreate(
-                ['email' => $account['email']],
-                [
+                $email = $demoAccounts[$doctor->name] ?? 'doctor' . $doctor->id . '@medbook.local';
+
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => $doctor->name,
+                        'password' => Hash::make('demo123'),
+                        'role' => 'doctor',
+                    ]
+                );
+
+                $user->forceFill([
                     'name' => $doctor->name,
-                    'password' => Hash::make('demo123'),
                     'role' => 'doctor',
-                ]
-            );
+                ])->save();
 
-            $doctor->update(['user_id' => $user->id]);
-        }
-
-        // Also link 20 random doctors to user accounts
-        $unlinkedDoctors = Doctor::whereNull('user_id')->inRandomOrder()->limit(20)->get();
-        foreach ($unlinkedDoctors as $doctor) {
-            $user = User::create([
-                'name' => $doctor->name,
-                'email' => fake()->unique()->safeEmail(),
-                'password' => Hash::make('demo123'),
-                'role' => 'doctor',
-            ]);
-            $doctor->update(['user_id' => $user->id]);
-        }
+                $doctor->update(['user_id' => $user->id]);
+            }
+        });
     }
 
     /**

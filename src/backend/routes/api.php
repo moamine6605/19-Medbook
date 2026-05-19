@@ -69,9 +69,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/appointments', [AdminDashboardController::class, 'appointments']);
     Route::get('/admin/patients', [AdminDashboardController::class, 'patients']);
     Route::get('/admin/doctors', [AdminDashboardController::class, 'doctors']);
+    Route::get('/admin/doctors/archive', [AdminDashboardController::class, 'archivedDoctors']);
     Route::post('/admin/patients', [AdminDashboardController::class, 'storePatient']);
     Route::post('/admin/doctors', [AdminDashboardController::class, 'storeDoctor']);
     Route::post('/admin/appointments', [AdminDashboardController::class, 'storeAppointment']);
+    Route::patch('/admin/doctors/{doctor}/archive', [AdminDashboardController::class, 'archiveDoctor']);
+    Route::delete('/admin/doctors/archive/{archivedDoctor}', [AdminDashboardController::class, 'deleteArchivedDoctor']);
+    Route::delete('/admin/doctors/{doctor}', [AdminDashboardController::class, 'deleteDoctor']);
     Route::patch('/admin/users/{user}', [AdminDashboardController::class, 'updateUser']);
     Route::delete('/admin/users/{user}', [AdminDashboardController::class, 'deleteUser']);
 });

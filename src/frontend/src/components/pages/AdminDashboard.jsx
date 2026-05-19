@@ -6,6 +6,7 @@ import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { getAdminStats, getAdminAppointmentsAnalytics, getAdminRevenueAnalytics, getAdminTopDoctors, getAdminActivity } from '../../services/api';
 import { AdminCreateModal } from './admin/AdminCreateModal.jsx';
+import { onEvent } from '../../services/events.js';
 import '../../styles/pages/Dashboard.css';
 
 function getInitials(name = 'User') {
@@ -49,6 +50,37 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
       }
     };
     fetchData();
+  }, []);
+
+  const refresh = async () => {
+    try {
+      const [statsData, appointmentsRes, revenueRes, doctorsRes, activityRes] = await Promise.all([
+        getAdminStats(),
+        getAdminAppointmentsAnalytics(),
+        getAdminRevenueAnalytics(),
+        getAdminTopDoctors(),
+        getAdminActivity(),
+      ]);
+      setStats(statsData);
+      setAppointmentsData(appointmentsRes);
+      setRevenueData(revenueRes);
+      setTopDoctors(doctorsRes);
+      setRecentActivity(activityRes);
+    } catch (e) {
+      console.error('Erreur refresh admin dashboard', e);
+    }
+  };
+
+  // Keep admin dashboard consistent when data changes elsewhere.
+  useEffect(() => {
+    const off = onEvent('admin:stats:changed', () => {
+      refresh();
+    });
+    const interval = setInterval(() => refresh(), 10000);
+    return () => {
+      off();
+      clearInterval(interval);
+    };
   }, []);
 
   const statCards = [
@@ -270,7 +302,7 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                 </div>
             </div>
 
-            <AdminCreateModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={() => {}} />
+            <AdminCreateModal kind="appointment" open={createOpen} onClose={() => setCreateOpen(false)} onCreated={() => refresh()} />
         </div>);
 
 }

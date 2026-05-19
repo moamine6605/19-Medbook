@@ -46,7 +46,8 @@ export function Sidebar({
   { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord', to: '/admin/dashboard' },
   { id: 'appointments', icon: Calendar, label: 'Tous les rendez-vous', to: '/admin/appointments' },
   { id: 'patients', icon: Users, label: 'Patients', to: '/admin/patients' },
-  { id: 'doctors', icon: Activity, label: 'Médecins', to: '/admin/doctors' }];
+  { id: 'doctors', icon: Activity, label: 'Médecins', to: '/admin/doctors' },
+  { id: 'archive', icon: Clock, label: 'Archive', to: '/admin/archive' }];
 
 
   const menuItems = userRole === 'doctor' ?

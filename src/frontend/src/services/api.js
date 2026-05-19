@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { emitEvent } from './events.js';
 
 const API_BASE_URL =
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ?
@@ -113,6 +114,10 @@ export const getDoctorAppointments = async ({ scope = 'today' } = {}) => {
 
 export const updateDoctorAppointmentStatus = async (appointmentId, status) => {
     const response = await api.patch(`/doctor/appointments/${appointmentId}/status`, { status });
+    emitEvent('appointments:changed');
+    emitEvent('doctor:appointments:changed');
+    emitEvent('patient:appointments:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
@@ -171,18 +176,51 @@ export const getAdminDoctors = async ({ q = '', min_rating = '' } = {}) => {
     return response.data;
 };
 
+export const getArchivedAdminDoctors = async ({ q = '' } = {}) => {
+    const response = await api.get('/admin/doctors/archive', { params: { q } });
+    return response.data;
+};
+
 export const createAdminPatient = async (data) => {
     const response = await api.post('/admin/patients', data);
+    emitEvent('admin:patients:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
 export const createAdminDoctor = async (data) => {
     const response = await api.post('/admin/doctors', data);
+    emitEvent('admin:doctors:changed');
+    emitEvent('admin:stats:changed');
+    return response.data;
+};
+
+export const archiveAdminDoctor = async (doctorId) => {
+    const response = await api.patch(`/admin/doctors/${doctorId}/archive`);
+    emitEvent('admin:doctors:changed');
+    emitEvent('admin:stats:changed');
+    return response.data;
+};
+
+export const deleteAdminDoctor = async (doctorId) => {
+    const response = await api.delete(`/admin/doctors/${doctorId}`);
+    emitEvent('admin:doctors:changed');
+    emitEvent('admin:stats:changed');
+    return response.data;
+};
+
+export const deleteArchivedAdminDoctor = async (archivedDoctorId) => {
+    const response = await api.delete(`/admin/doctors/archive/${archivedDoctorId}`);
+    emitEvent('admin:doctors:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
 export const createAdminAppointment = async (data) => {
     const response = await api.post('/admin/appointments', data);
+    emitEvent('appointments:changed');
+    emitEvent('admin:appointments:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
@@ -203,16 +241,28 @@ export const getDoctorAvailability = async (doctorId, date) => {
 
 export const createAppointment = async (data) => {
     const response = await api.post('/patient/appointments', data);
+    emitEvent('appointments:changed');
+    emitEvent('patient:appointments:changed');
+    emitEvent('doctor:appointments:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
 export const updateAppointment = async (id, data) => {
     const response = await api.put(`/patient/appointments/${id}`, data);
+    emitEvent('appointments:changed');
+    emitEvent('patient:appointments:changed');
+    emitEvent('doctor:appointments:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
 export const deleteAppointment = async (id) => {
     const response = await api.delete(`/patient/appointments/${id}`);
+    emitEvent('appointments:changed');
+    emitEvent('patient:appointments:changed');
+    emitEvent('doctor:appointments:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
@@ -223,6 +273,7 @@ export const getDoctorProfile = async () => {
 
 export const updateDoctorProfile = async (data) => {
     const response = await api.put('/doctor/profile', data);
+    emitEvent('doctor:profile:changed');
     return response.data;
 };
 
@@ -233,21 +284,28 @@ export const getDoctorSlots = async (date = '') => {
 
 export const addDoctorSlot = async (data) => {
     const response = await api.post('/doctor/slots', data);
+    emitEvent('doctor:slots:changed');
     return response.data;
 };
 
 export const deleteDoctorSlot = async (slotId) => {
     const response = await api.delete(`/doctor/slots/${slotId}`);
+    emitEvent('doctor:slots:changed');
     return response.data;
 };
 
 export const adminUpdateUser = async (userId, data) => {
     const response = await api.patch(`/admin/users/${userId}`, data);
+    emitEvent('admin:users:changed');
+    emitEvent('admin:doctors:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 
 export const adminDeleteUser = async (userId) => {
     const response = await api.delete(`/admin/users/${userId}`);
+    emitEvent('admin:users:changed');
+    emitEvent('admin:stats:changed');
     return response.data;
 };
 

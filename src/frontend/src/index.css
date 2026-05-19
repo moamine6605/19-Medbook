@@ -135,6 +135,10 @@ p { margin-bottom: 1rem; }
   background: var(--success);
   color: white;
 }
+.btn-danger {
+  background: var(--destructive);
+  color: white;
+}
 .btn-outline {
   background: transparent;
   border: 1px solid var(--border);
@@ -245,6 +249,7 @@ p { margin-bottom: 1rem; }
 .badge-primary { background: var(--primary); color: white; }
 .badge-secondary { background: var(--muted); color: var(--foreground); }
 .badge-success { background: var(--success); color: white; }
+.badge-danger { background: var(--destructive); color: white; }
 .badge-warning { background: var(--warning); color: white; }
 .badge-outline { border: 1px solid var(--border); color: var(--foreground); }
 

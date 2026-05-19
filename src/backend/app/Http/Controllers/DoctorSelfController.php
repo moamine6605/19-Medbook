@@ -149,6 +149,11 @@ class DoctorSelfController extends Controller
             abort(Response::HTTP_FORBIDDEN, 'Doctor access required.');
         }
 
-        return Doctor::where('user_id', $user->id)->firstOrFail();
+        $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+        if ($doctor->status === 'desactive') {
+            abort(Response::HTTP_FORBIDDEN, 'Compte médecin désactivé.');
+        }
+
+        return $doctor;
     }
 }

@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PatientController extends Controller
 {
+    private const BLOCKING_STATUSES = ['upcoming', 'in-progress'];
+
     private const DEFAULT_TIMES = [
         '08:00', '08:30',
         '09:00', '09:30', '10:00', '10:30',
@@ -27,7 +29,7 @@ class PatientController extends Controller
      */
     public function stats(Request $request)
     {
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
 
         $upcomingAppointments = Appointment::where('patient_id', $user->id)
             ->where('status', 'upcoming')
@@ -60,7 +62,7 @@ class PatientController extends Controller
      */
     public function appointments(Request $request)
     {
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
 
         $request->validate([
             'scope' => ['nullable', 'in:upcoming,past,all'],
@@ -102,7 +104,7 @@ class PatientController extends Controller
      */
     public function activity(Request $request)
     {
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
 
         $activities = PatientActivity::where('patient_id', $user->id)
             ->orderByDesc('created_at')
@@ -134,7 +136,7 @@ class PatientController extends Controller
             'reason' => 'nullable|string',
         ]);
 
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
         $doctor = \App\Models\Doctor::findOrFail($request->doctor_id);
 
         // All default slots are available; we only prevent double-booking.
@@ -148,6 +150,7 @@ class PatientController extends Controller
         $conflict = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('date', $request->date)
             ->where('time', $request->time)
+            ->whereIn('status', self::BLOCKING_STATUSES)
             ->exists();
         if ($conflict) {
             return response()->json([
@@ -204,7 +207,7 @@ class PatientController extends Controller
             'type' => 'nullable|in:in-person,video',
         ]);
 
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
         $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
 
         $doctorId = $appointment->doctor_id;
@@ -218,6 +221,7 @@ class PatientController extends Controller
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->whereDate('date', $request->date)
             ->where('time', $request->time)
+            ->whereIn('status', self::BLOCKING_STATUSES)
             ->where('id', '!=', $appointment->id)
             ->exists();
         if ($conflict) {
@@ -261,7 +265,7 @@ class PatientController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $user = $request->user();
+        $user = $this->patientOrFail($request);
         $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
 
         $doctor = $appointment->doctor;
@@ -290,5 +294,15 @@ class PatientController extends Controller
         ]);
 
         return ucfirst($diff);
+    }
+
+    private function patientOrFail(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'patient') {
+            abort(Response::HTTP_FORBIDDEN, 'Patient access required.');
+        }
+
+        return $user;
     }
 }

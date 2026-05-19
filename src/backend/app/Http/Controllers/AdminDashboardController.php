@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\ArchivedDoctor;
 use App\Models\Doctor;
 use App\Models\User;
 use Carbon\Carbon;
@@ -16,6 +17,17 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminDashboardController extends Controller
 {
     private const CONSULTATION_FEE = 50; // € per completed appointment
+    private const BLOCKING_STATUSES = ['upcoming', 'in-progress'];
+    private const DEFAULT_TIMES = [
+        '08:00', '08:30',
+        '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30',
+        '14:00', '14:30',
+        '15:00', '15:30',
+        '16:00', '16:30',
+        '17:00',
+    ];
+
     private const SPECIALTIES = [
         'Cardiologue',
         'Neurologue',
@@ -73,7 +85,9 @@ class AdminDashboardController extends Controller
             : 0;
 
         // Active doctors (linked to user accounts)
-        $activeDoctors = Doctor::whereNotNull('user_id')->count();
+        $activeDoctors = Doctor::whereDoesntHave('archivedRecord')
+            ->where('status', 'actif')
+            ->count();
         $newDoctorsThisMonth = Doctor::whereNotNull('user_id')
             ->where('updated_at', '>=', $startOfMonth)
             ->count();
@@ -169,6 +183,7 @@ class AdminDashboardController extends Controller
         $this->authorizeAdmin(request());
 
         $doctors = Doctor::select('doctors.*')
+            ->whereDoesntHave('archivedRecord')
             ->selectSub(function ($query) {
                 $query->from('appointments')
                     ->selectRaw('COUNT(DISTINCT patient_id)')
@@ -184,7 +199,7 @@ class AdminDashboardController extends Controller
                     'specialty' => $doctor->specialty,
                     'patients' => (int) $doctor->patients_count,
                     'rating' => $doctor->rating,
-                    'status' => $doctor->user_id ? 'Actif' : 'Inactif',
+                    'status' => $doctor->status === 'desactive' ? 'Désactivé' : 'Actif',
                 ];
             });
 
@@ -448,6 +463,7 @@ class AdminDashboardController extends Controller
             'doctors.reviews',
             'doctors.experience',
             'doctors.user_id',
+            'doctors.status',
         ];
         if (Schema::hasColumn('users', 'is_active')) {
             $select[] = 'users.is_active as is_active';
@@ -458,12 +474,14 @@ class AdminDashboardController extends Controller
 
         $query = Doctor::query()
             ->leftJoin('users', 'users.id', '=', 'doctors.user_id')
+            ->whereDoesntHave('archivedRecord')
             ->select($select)
             ->orderByDesc('rating')
-            ->orderBy('name');
+            ->orderBy('doctors.name');
 
         if ($q !== '') {
-            $query->where('name', 'like', '%' . $q . '%');
+            // Avoid ambiguous column name with the users join.
+            $query->where('doctors.name', 'like', '%' . $q . '%');
         }
 
         if ($minRating !== null && is_numeric($minRating)) {
@@ -480,10 +498,40 @@ class AdminDashboardController extends Controller
                     'reviews' => $d->reviews,
                     'experience' => $d->experience,
                     'user_id' => $d->user_id,
-                    'is_active' => $d->user_id ? (bool) $d->is_active : null,
-                    'status' => $d->user_id ? ((bool) $d->is_active ? 'Actif' : 'Désactivé') : 'Inactif',
+                    'is_active' => $d->status === 'actif',
+                    'status' => $d->status === 'desactive' ? 'Désactivé' : 'Actif',
                 ];
             })->values()
+        );
+    }
+
+    public function archivedDoctors(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $q = trim((string) $request->query('q', ''));
+
+        $query = ArchivedDoctor::query()
+            ->orderByDesc('archived_at')
+            ->orderBy('name');
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%' . $q . '%');
+        }
+
+        return response()->json(
+            $query->limit(1000)->get()->map(fn (ArchivedDoctor $doctor) => [
+                'id' => $doctor->id,
+                'doctor_id' => $doctor->doctor_id,
+                'user_id' => $doctor->user_id,
+                'name' => $doctor->name,
+                'specialty' => $doctor->specialty,
+                'rating' => $doctor->rating,
+                'reviews' => $doctor->reviews,
+                'experience' => $doctor->experience,
+                'status' => 'Archivé',
+                'archived_at' => optional($doctor->archived_at)->toDateTimeString(),
+            ])->values()
         );
     }
 
@@ -505,14 +553,19 @@ class AdminDashboardController extends Controller
 
         $data = $request->validate($rules);
 
-        $user = User::create([
+        $userPayload = [
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => 'patient',
             'birth_date' => $data['birth_date'],
-            'blood_type' => Schema::hasColumn('users', 'blood_type') ? $data['blood_type'] : null,
-        ]);
+        ];
+
+        if (Schema::hasColumn('users', 'blood_type')) {
+            $userPayload['blood_type'] = $data['blood_type'];
+        }
+
+        $user = User::create($userPayload);
 
         return response()->json([
             'id' => $user->id,
@@ -551,6 +604,7 @@ class AdminDashboardController extends Controller
             'rating' => 0.0,
             'reviews' => 0,
             'is_featured' => (bool) ($data['is_featured'] ?? false),
+            'status' => 'actif',
         ]);
 
         return response()->json([
@@ -560,6 +614,90 @@ class AdminDashboardController extends Controller
             'rating' => $doctor->rating,
             'status' => 'Actif',
         ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Archive a doctor: detach from user account and disable login.
+     * This moves the doctor to "Inactif" (no linked user_id).
+     */
+    public function archiveDoctor(Request $request, Doctor $doctor)
+    {
+        $this->authorizeAdmin($request);
+
+        if ($doctor->user_id) {
+            $user = User::find($doctor->user_id);
+            if ($user && Schema::hasColumn('users', 'is_active')) {
+                $user->is_active = false;
+                $user->save();
+            }
+        }
+
+        ArchivedDoctor::updateOrCreate(
+            ['doctor_id' => $doctor->id],
+            [
+                'user_id' => $doctor->user_id,
+                'name' => $doctor->name,
+                'specialty' => $doctor->specialty,
+                'rating' => $doctor->rating,
+                'reviews' => $doctor->reviews,
+                'experience' => $doctor->experience,
+                'phone' => $doctor->phone,
+                'address' => $doctor->address,
+                'bio' => $doctor->bio,
+                'archived_at' => now(),
+            ]
+        );
+
+        $doctor->status = 'desactive';
+        $doctor->user_id = null;
+        $doctor->save();
+
+        return response()->json([
+            'id' => $doctor->id,
+            'status' => 'Inactif',
+        ]);
+    }
+
+    /**
+     * Delete a doctor permanently (admin).
+     */
+    public function deleteDoctor(Request $request, Doctor $doctor)
+    {
+        $this->authorizeAdmin($request);
+
+        // If still linked, disable and detach first.
+        if ($doctor->user_id) {
+            $user = User::find($doctor->user_id);
+            if ($user && Schema::hasColumn('users', 'is_active')) {
+                $user->is_active = false;
+                $user->save();
+            }
+        }
+
+        $doctor->delete();
+
+        return response()->json(['message' => 'Médecin supprimé.']);
+    }
+
+    public function deleteArchivedDoctor(Request $request, ArchivedDoctor $archivedDoctor)
+    {
+        $this->authorizeAdmin($request);
+
+        if ($archivedDoctor->user_id) {
+            $user = User::find($archivedDoctor->user_id);
+            if ($user) {
+                $user->tokens()->delete();
+                $user->delete();
+            }
+        }
+
+        if ($archivedDoctor->doctor_id) {
+            Doctor::whereKey($archivedDoctor->doctor_id)->delete();
+        }
+
+        $archivedDoctor->delete();
+
+        return response()->json(['message' => 'Médecin archivé supprimé.']);
     }
 
     public function storeAppointment(Request $request)
@@ -576,10 +714,29 @@ class AdminDashboardController extends Controller
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
+        if (!in_array($data['time'], self::DEFAULT_TIMES, true)) {
+            return response()->json([
+                'message' => 'Créneau invalide.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $date = Carbon::parse($data['date'])->toDateString();
+        $conflict = Appointment::where('doctor_id', $data['doctor_id'])
+            ->whereDate('date', $date)
+            ->where('time', $data['time'])
+            ->whereIn('status', self::BLOCKING_STATUSES)
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Ce créneau est déjà réservé.',
+            ], Response::HTTP_CONFLICT);
+        }
+
         $appointment = Appointment::create([
             'patient_id' => $data['patient_id'],
             'doctor_id' => $data['doctor_id'],
-            'date' => Carbon::parse($data['date'])->toDateString(),
+            'date' => $date,
             'time' => $data['time'],
             'status' => $data['status'] ?? 'upcoming',
             'type' => $data['type'] ?? 'in-person',
@@ -637,10 +794,16 @@ class AdminDashboardController extends Controller
 
         $user->save();
 
+        if (array_key_exists('is_active', $data) && $data['is_active'] !== null) {
+            Doctor::where('user_id', $user->id)->update([
+                'status' => (bool) $data['is_active'] ? 'actif' : 'desactive',
+            ]);
+        }
+
         return response()->json([
             'id' => $user->id,
             'role' => $user->role,
-            'is_active' => (bool) $user->is_active,
+            'is_active' => (bool) ($data['is_active'] ?? $user->is_active),
         ]);
     }
 

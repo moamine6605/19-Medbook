@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Doctor extends Model
 {
@@ -22,6 +23,7 @@ class Doctor extends Model
         'bio',
         'is_featured',
         'user_id',
+        'status',
     ];
 
     protected function casts(): array
@@ -41,5 +43,10 @@ class Doctor extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function archivedRecord(): HasOne
+    {
+        return $this->hasOne(ArchivedDoctor::class);
     }
 }

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 
 class DoctorAvailabilityController extends Controller
 {
+    private const BLOCKING_STATUSES = ['upcoming', 'in-progress'];
+
     private const DEFAULT_TIMES = [
         '08:00', '08:30',
         '09:00', '09:30', '10:00', '10:30',
@@ -33,6 +35,7 @@ class DoctorAvailabilityController extends Controller
 
         $bookedTimes = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('date', $date)
+            ->whereIn('status', self::BLOCKING_STATUSES)
             ->pluck('time')
             ->all();
 

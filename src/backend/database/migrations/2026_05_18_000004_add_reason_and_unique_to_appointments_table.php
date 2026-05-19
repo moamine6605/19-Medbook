@@ -14,11 +14,9 @@ return new class extends Migration
             }
         });
 
-        // Add unique constraint for anti-chevauchement.
+        // Index common availability lookups. Conflict rules live in application code
+        // so cancelled appointments can release their slots.
         Schema::table('appointments', function (Blueprint $table) {
-            // If the index exists, Laravel will throw; keep it simple and try/catch at runtime not possible here.
-            // We'll guard by checking schema manager via raw SQL in runtime migrations is overkill; assume fresh DB.
-            $table->unique(['doctor_id', 'date', 'time'], 'appointments_doctor_date_time_unique');
             $table->index(['doctor_id', 'date'], 'appointments_doctor_date_index');
         });
     }
@@ -29,9 +27,7 @@ return new class extends Migration
             if (Schema::hasColumn('appointments', 'reason')) {
                 $table->dropColumn('reason');
             }
-            $table->dropUnique('appointments_doctor_date_time_unique');
             $table->dropIndex('appointments_doctor_date_index');
         });
     }
 };
-

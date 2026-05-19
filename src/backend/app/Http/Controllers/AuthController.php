@@ -52,6 +52,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Compte désactivé.'], Response::HTTP_FORBIDDEN);
         }
 
+        if ($user->role === 'doctor') {
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+            if ($doctor && $doctor->status === 'desactive') {
+                return response()->json(['message' => 'Compte désactivé.'], Response::HTTP_FORBIDDEN);
+            }
+        }
+
         // Revoke existing tokens for a clean SPA experience.
         $user->tokens()->delete();
         $token = $user->createToken('spa')->plainTextToken;

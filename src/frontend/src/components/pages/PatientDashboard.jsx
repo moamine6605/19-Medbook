@@ -3,6 +3,7 @@ import { Calendar, Clock, TrendingUp, Heart, Plus, Search } from 'lucide-react';
 import { Sidebar } from '../Sidebar.jsx';
 import { DashboardHeader } from '../DashboardHeader.jsx';
 import { useToast } from '../ui/useToast.js';
+import { onEvent } from '../../services/events.js';
 import {
   getPatientStats,
   getPatientAppointments,
@@ -115,6 +116,14 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
     return () => {
       active = false;
     };
+  }, []);
+
+  // Keep patient UI consistent when appointments change elsewhere (admin creates, doctor completes).
+  useEffect(() => {
+    const off = onEvent('patient:appointments:changed', () => {
+      loadData(false);
+    });
+    return () => off();
   }, []);
 
   // Handle sidebar tab changes
