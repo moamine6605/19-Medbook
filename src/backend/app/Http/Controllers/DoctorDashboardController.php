@@ -308,6 +308,17 @@ class DoctorDashboardController extends Controller
             ], Response::HTTP_CONFLICT);
         }
 
+        // Cancel frees the slot: we remove the appointment record.
+        if ($status === 'cancelled') {
+            $id = $appointment->id;
+            $appointment->delete();
+
+            return response()->json([
+                'id' => $id,
+                'status' => 'cancelled',
+            ]);
+        }
+
         if ($status === 'completed' && $appointment->status !== 'in-progress') {
             return response()->json([
                 'message' => 'Passez d’abord le rendez-vous en cours.',

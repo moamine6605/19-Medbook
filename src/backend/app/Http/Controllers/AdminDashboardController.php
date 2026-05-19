@@ -6,27 +6,19 @@ use App\Models\Appointment;
 use App\Models\ArchivedDoctor;
 use App\Models\Doctor;
 use App\Models\User;
+use App\Support\SlotPolicy;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AdminDashboardController extends Controller
 {
     private const CONSULTATION_FEE = 50; // € per completed appointment
-    private const BLOCKING_STATUSES = ['upcoming', 'in-progress'];
-    private const DEFAULT_TIMES = [
-        '08:00', '08:30',
-        '09:00', '09:30', '10:00', '10:30',
-        '11:00', '11:30',
-        '14:00', '14:30',
-        '15:00', '15:30',
-        '16:00', '16:30',
-        '17:00',
-    ];
 
     private const SPECIALTIES = [
         'Cardiologue',
@@ -709,22 +701,31 @@ class AdminDashboardController extends Controller
             'doctor_id' => ['required', 'integer', 'exists:doctors,id'],
             'date' => ['required', 'date'],
             'time' => ['required', 'string', 'regex:/^\\d{2}:\\d{2}$/'],
-            'status' => ['nullable', Rule::in(['upcoming', 'completed', 'cancelled', 'in-progress'])],
+            // Admin creates/schedules appointments; "cancelled" should free the slot (deletion), not be stored.
+            'status' => ['nullable', Rule::in(['upcoming', 'completed', 'in-progress'])],
             'type' => ['nullable', Rule::in(['in-person', 'video'])],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (!in_array($data['time'], self::DEFAULT_TIMES, true)) {
+        $doctor = Doctor::findOrFail((int) $data['doctor_id']);
+        if ($doctor->status !== 'actif' || $doctor->archivedRecord()->exists()) {
+            return response()->json([
+                'message' => 'Médecin indisponible.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $date = Carbon::parse($data['date'])->toDateString();
+        $allowedTimes = SlotPolicy::allowedTimesForDoctorDate((int) $data['doctor_id'], $date);
+        if (!in_array($data['time'], $allowedTimes, true)) {
             return response()->json([
                 'message' => 'Créneau invalide.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $date = Carbon::parse($data['date'])->toDateString();
         $conflict = Appointment::where('doctor_id', $data['doctor_id'])
             ->whereDate('date', $date)
             ->where('time', $data['time'])
-            ->whereIn('status', self::BLOCKING_STATUSES)
+            ->whereIn('status', SlotPolicy::BLOCKING_STATUSES)
             ->exists();
 
         if ($conflict) {
@@ -733,15 +734,24 @@ class AdminDashboardController extends Controller
             ], Response::HTTP_CONFLICT);
         }
 
-        $appointment = Appointment::create([
-            'patient_id' => $data['patient_id'],
-            'doctor_id' => $data['doctor_id'],
-            'date' => $date,
-            'time' => $data['time'],
-            'status' => $data['status'] ?? 'upcoming',
-            'type' => $data['type'] ?? 'in-person',
-            'reason' => $data['reason'] ?? null,
-        ]);
+        try {
+            $appointment = Appointment::create([
+                'patient_id' => $data['patient_id'],
+                'doctor_id' => $data['doctor_id'],
+                'date' => $date,
+                'time' => $data['time'],
+                'status' => $data['status'] ?? 'upcoming',
+                'type' => $data['type'] ?? 'in-person',
+                'reason' => $data['reason'] ?? null,
+            ]);
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() === '23000') {
+                return response()->json([
+                    'message' => 'Ce créneau est déjà réservé.',
+                ], Response::HTTP_CONFLICT);
+            }
+            throw $e;
+        }
 
         return response()->json([
             'id' => $appointment->id,

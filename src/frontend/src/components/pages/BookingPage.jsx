@@ -108,6 +108,12 @@ export function BookingPage({ isAuthenticated, onBookingComplete }) {
       return;
     }
 
+    if (!selectedDoctor?.id || !selectedDate || !selectedTime) {
+      toast.error("Veuillez sélectionner un médecin, une date et une heure.");
+      setStep(1);
+      return;
+    }
+
     try {
       await createAppointment({
         doctor_id: selectedDoctor?.id,
@@ -118,7 +124,15 @@ export function BookingPage({ isAuthenticated, onBookingComplete }) {
       onBookingComplete?.();
     } catch (error) {
       console.error("Erreur lors de la création du rendez-vous:", error);
-      toast.error("Une erreur est survenue lors de la réservation. Veuillez réessayer.");
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message;
+      if (status === 409) {
+        toast.error(msg || "Ce créneau est déjà réservé. Veuillez en choisir un autre.");
+        await loadAvailability(selectedDate);
+        setStep(3);
+        return;
+      }
+      toast.error(msg || "Une erreur est survenue lors de la réservation. Veuillez réessayer.");
     }
   };
 

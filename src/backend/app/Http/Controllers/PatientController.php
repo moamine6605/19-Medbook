@@ -6,24 +6,15 @@ use App\Models\Appointment;
 use App\Models\Prescription;
 use App\Models\PatientActivity;
 use App\Mail\AppointmentConfirmation;
+use App\Support\SlotPolicy;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Database\QueryException;
 use Symfony\Component\HttpFoundation\Response;
 
 class PatientController extends Controller
 {
-    private const BLOCKING_STATUSES = ['upcoming', 'in-progress'];
-
-    private const DEFAULT_TIMES = [
-        '08:00', '08:30',
-        '09:00', '09:30', '10:00', '10:30',
-        '11:00', '11:30',
-        '14:00', '14:30',
-        '15:00', '15:30',
-        '16:00', '16:30',
-        '17:00',
-    ];
     /**
      * Get patient dashboard stats.
      */
@@ -139,8 +130,14 @@ class PatientController extends Controller
         $user = $this->patientOrFail($request);
         $doctor = \App\Models\Doctor::findOrFail($request->doctor_id);
 
-        // All default slots are available; we only prevent double-booking.
-        if (!in_array($request->time, self::DEFAULT_TIMES, true)) {
+        if ($doctor->status !== 'actif' || $doctor->archivedRecord()->exists()) {
+            return response()->json([
+                'message' => 'Médecin indisponible.',
+            ], Response::HTTP_CONFLICT);
+        }
+
+        $allowedTimes = SlotPolicy::allowedTimesForDoctorDate($doctor->id, $request->date);
+        if (!in_array($request->time, $allowedTimes, true)) {
             return response()->json([
                 'message' => 'Créneau invalide.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -150,7 +147,7 @@ class PatientController extends Controller
         $conflict = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('date', $request->date)
             ->where('time', $request->time)
-            ->whereIn('status', self::BLOCKING_STATUSES)
+            ->whereIn('status', SlotPolicy::BLOCKING_STATUSES)
             ->exists();
         if ($conflict) {
             return response()->json([
@@ -158,15 +155,25 @@ class PatientController extends Controller
             ], Response::HTTP_CONFLICT);
         }
 
-        $appointment = Appointment::create([
-            'patient_id' => $user->id,
-            'doctor_id' => $request->doctor_id,
-            'date' => $request->date,
-            'time' => $request->time,
-            'status' => 'upcoming',
-            'type' => $request->type ?? 'in-person',
-            'reason' => $request->reason ?? 'Consultation',
-        ]);
+        try {
+            $appointment = Appointment::create([
+                'patient_id' => $user->id,
+                'doctor_id' => $request->doctor_id,
+                'date' => $request->date,
+                'time' => $request->time,
+                'status' => 'upcoming',
+                'type' => $request->type ?? 'in-person',
+                'reason' => $request->reason ?? 'Consultation',
+            ]);
+        } catch (QueryException $e) {
+            // If a DB-level uniqueness constraint is in place, surface a clean 409 to the SPA.
+            if ((string) $e->getCode() === '23000') {
+                return response()->json([
+                    'message' => 'Ce créneau est déjà réservé.',
+                ], Response::HTTP_CONFLICT);
+            }
+            throw $e;
+        }
 
         PatientActivity::create([
             'patient_id' => $user->id,
@@ -211,8 +218,15 @@ class PatientController extends Controller
         $appointment = Appointment::where('patient_id', $user->id)->findOrFail($id);
 
         $doctorId = $appointment->doctor_id;
+        $doctor = $appointment->doctor;
+        if ($doctor && ($doctor->status !== 'actif' || $doctor->archivedRecord()->exists())) {
+            return response()->json([
+                'message' => 'Médecin indisponible.',
+            ], Response::HTTP_CONFLICT);
+        }
 
-        if (!in_array($request->time, self::DEFAULT_TIMES, true)) {
+        $allowedTimes = SlotPolicy::allowedTimesForDoctorDate($doctorId, $request->date);
+        if (!in_array($request->time, $allowedTimes, true)) {
             return response()->json([
                 'message' => 'Créneau invalide.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -221,7 +235,7 @@ class PatientController extends Controller
         $conflict = Appointment::where('doctor_id', $doctorId)
             ->whereDate('date', $request->date)
             ->where('time', $request->time)
-            ->whereIn('status', self::BLOCKING_STATUSES)
+            ->whereIn('status', SlotPolicy::BLOCKING_STATUSES)
             ->where('id', '!=', $appointment->id)
             ->exists();
         if ($conflict) {
@@ -230,12 +244,21 @@ class PatientController extends Controller
             ], Response::HTTP_CONFLICT);
         }
 
-        $appointment->date = $request->date;
-        $appointment->time = $request->time;
-        if ($request->has('type')) {
-            $appointment->type = $request->type;
+        try {
+            $appointment->date = $request->date;
+            $appointment->time = $request->time;
+            if ($request->has('type')) {
+                $appointment->type = $request->type;
+            }
+            $appointment->save();
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() === '23000') {
+                return response()->json([
+                    'message' => 'Ce créneau est déjà réservé.',
+                ], Response::HTTP_CONFLICT);
+            }
+            throw $e;
         }
-        $appointment->save();
 
         $doctor = $appointment->doctor;
 

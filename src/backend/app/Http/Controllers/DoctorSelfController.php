@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\DoctorSlot;
+use App\Support\SlotPolicy;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -129,6 +130,7 @@ class DoctorSelfController extends Controller
         $booked = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('date', $slot->date)
             ->where('time', $slot->time)
+            ->whereIn('status', SlotPolicy::BLOCKING_STATUSES)
             ->exists();
 
         if ($booked) {
