@@ -4,7 +4,6 @@ import {LandingPage} from "./components/pages/LandingPage.jsx";
 import {LoginPage} from "./components/pages/LoginPage.jsx";
 import {RegisterPage} from "./components/pages/RegisterPage.jsx";
 import {PatientDashboard} from "./components/pages/PatientDashboard.jsx";
-import {BookingPage} from "./components/pages/BookingPage.jsx";
 import {DoctorDashboard} from "./components/pages/DoctorDashboard.jsx";
 import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
 import { AdminAppointmentsPage } from "./components/pages/admin/AdminAppointmentsPage.jsx";
@@ -148,6 +147,7 @@ function AppRoutes({ isAuthenticated, authChecked, userRole, user, setIsAuthenti
             element={
               <LandingPage
                   isAuthenticated={isAuthenticated}
+                  authChecked={authChecked}
                   user={user}
                   onLogout={handleLogout}
                   onDashboardClick={handleDashboardClick}
@@ -188,29 +188,6 @@ function AppRoutes({ isAuthenticated, authChecked, userRole, user, setIsAuthenti
 
 
             } />
-
-
-        {/* Booking Route - Can be accessed by non-authenticated users */}
-        <Route
-            path="/booking"
-            element={
-              <BookingPage
-                  isAuthenticated={isAuthenticated}
-                  user={user}
-                  onLogout={handleLogout}
-                  onLoginClick={() => navigate('/login')}
-                  onSignUpClick={() => navigate('/register')}
-                  onHomeClick={() => navigate('/')}
-                  onBookingComplete={() => {
-                    if (isAuthenticated) {
-                      navigate('/patient/dashboard');
-                    } else {
-                      navigate('/login');
-                    }
-                  }} />
-
-            } />
-
 
         {/* Patient Routes */}
         <Route

@@ -61,7 +61,10 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [appointmentsMode, setAppointmentsMode] = useState('list'); // list|book
+  const [appointmentsMode, setAppointmentsMode] = useState(() => {
+    const v = localStorage.getItem('patient_appointments_mode');
+    return v === 'book' ? 'book' : 'list';
+  }); // list|book
   const [bookingKey, setBookingKey] = useState(0);
 
   // Edit State
@@ -78,6 +81,13 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
   useEffect(() => {
     localStorage.setItem('patient_active_tab', activeTab);
   }, [activeTab]);
+
+  // One-shot: if we landed here with mode=book from a redirect, clear it after applying.
+  useEffect(() => {
+    if (appointmentsMode === 'book') {
+      localStorage.removeItem('patient_appointments_mode');
+    }
+  }, [appointmentsMode]);
 
   const loadAvailability = async (doctorId, date) => {
     if (!doctorId || !date) {
@@ -185,6 +195,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
     if (tabId === 'profile') loadProfile();
     if (tabId !== 'appointments') {
       setAppointmentsMode('list');
+      localStorage.setItem('patient_appointments_mode', 'list');
     }
   };
 
@@ -308,7 +319,13 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
                     <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={() => onNavigate?.('/booking')}
+                      onClick={() => {
+                        localStorage.setItem('patient_active_tab', 'appointments');
+                        localStorage.setItem('patient_appointments_mode', 'book');
+                        setActiveTab('appointments');
+                        setBookingKey((k) => k + 1);
+                        setAppointmentsMode('book');
+                      }}
                     >
                       <Plus size={16} className="dashboard-btn-icon" />
                       Nouveau
