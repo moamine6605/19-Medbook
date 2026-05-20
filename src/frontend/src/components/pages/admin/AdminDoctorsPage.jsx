@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { MoreVertical } from 'lucide-react';
 import { Sidebar } from '../../Sidebar.jsx';
 import { DashboardHeader } from '../../DashboardHeader.jsx';
@@ -26,6 +26,7 @@ function statusBadgeClass(doctor) {
 
 export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const userName = user?.name || 'Administrateur';
 
@@ -35,12 +36,20 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
 
   const [q, setQ] = useState('');
   const [minRating, setMinRating] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
   const [createKey, setCreateKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const lastRefreshKeyRef = useRef(refreshKey);
   const [menuFor, setMenuFor] = useState(null);
   const [updatingDoctorId, setUpdatingDoctorId] = useState(null);
+
+  const syncCreateParam = (nextOpen) => {
+    const params = new URLSearchParams(location.search);
+    if (nextOpen) params.set('create', 'doctor');
+    else params.delete('create');
+    const nextSearch = params.toString();
+    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
+  };
+  const createOpen = new URLSearchParams(location.search).get('create') === 'doctor';
 
   const requestParams = useMemo(() => ({ q, min_rating: minRating }), [q, minRating]);
 
@@ -102,7 +111,13 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
             <h3 className="card-title">Liste des médecins</h3>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="button" className="btn btn-primary" onClick={() => { setCreateKey((k) => k + 1); setCreateOpen(true); }}>Ajouter</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => { setCreateKey((k) => k + 1); syncCreateParam(true); }}
+              >
+                Ajouter
+              </button>
               <button type="button" className="btn btn-ghost" onClick={() => navigate('/admin/dashboard')}>Retour au dashboard</button>
             </div>
           </div>
@@ -255,8 +270,8 @@ export function AdminDoctorsPage({ onLogout, user, onHomeClick }) {
         key={createKey}
         open={createOpen}
         kind="doctor"
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => setRefreshKey((k) => k + 1)}
+        onClose={() => { syncCreateParam(false); }}
+        onCreated={() => { setRefreshKey((k) => k + 1); syncCreateParam(false); }}
       />
     </div>
   );

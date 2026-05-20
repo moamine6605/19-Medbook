@@ -223,6 +223,16 @@ p { margin-bottom: 1rem; }
   font-size: 0.875rem;
   word-break: break-word;
 }
+.toast-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.toast-action-btn {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+}
 .toast-close {
   border: none;
   background: transparent;

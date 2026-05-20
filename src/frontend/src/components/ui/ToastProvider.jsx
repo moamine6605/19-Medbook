@@ -23,6 +23,7 @@ export function ToastProvider({ children }) {
       title: toast.title ? normalize(toast.title) : '',
       message: normalize(toast.message),
       timeoutMs: typeof toast.timeoutMs === 'number' ? toast.timeoutMs : 3500,
+      actions: Array.isArray(toast.actions) ? toast.actions : null,
     };
     setToasts((prev) => [...prev, item]);
     if (item.timeoutMs > 0) {
@@ -37,6 +38,38 @@ export function ToastProvider({ children }) {
     error: (message, opts = {}) => push({ type: 'error', message, ...opts }),
     info: (message, opts = {}) => push({ type: 'info', message, ...opts }),
     warning: (message, opts = {}) => push({ type: 'warning', message, ...opts }),
+    confirm: (message, opts = {}) => {
+      let toastId = null;
+      return new Promise((resolve) => {
+        const {
+          title = 'Confirmation',
+          confirmLabel = 'Confirmer',
+          cancelLabel = 'Annuler',
+          confirmVariant = 'danger', // primary|danger|outline|ghost|success|secondary
+          cancelVariant = 'outline',
+        } = opts || {};
+
+        const onCancel = () => {
+          if (toastId !== null) remove(toastId);
+          resolve(false);
+        };
+        const onConfirm = () => {
+          if (toastId !== null) remove(toastId);
+          resolve(true);
+        };
+
+        toastId = push({
+          type: 'warning',
+          title,
+          message,
+          timeoutMs: 0,
+          actions: [
+            { label: cancelLabel, variant: cancelVariant, onClick: onCancel },
+            { label: confirmLabel, variant: confirmVariant, onClick: onConfirm },
+          ],
+        });
+      });
+    },
     remove,
   }), [push, remove]);
 
@@ -49,6 +82,20 @@ export function ToastProvider({ children }) {
             <div className="toast-body">
               {t.title ? <div className="toast-title">{t.title}</div> : null}
               <div className="toast-message">{t.message}</div>
+              {t.actions ? (
+                <div className="toast-actions">
+                  {t.actions.map((a, idx) => (
+                    <button
+                      key={`${a.label}-${idx}`}
+                      type="button"
+                      className={["btn", a.variant ? `btn-${a.variant}` : "btn-outline", "toast-action-btn"].filter(Boolean).join(" ")}
+                      onClick={a.onClick}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <button type="button" className="toast-close" onClick={() => remove(t.id)} aria-label="Fermer">×</button>
           </div>
@@ -57,4 +104,3 @@ export function ToastProvider({ children }) {
     </ToastContext.Provider>
   );
 }
-

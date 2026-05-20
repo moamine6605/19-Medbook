@@ -7,7 +7,7 @@ function getInitials(name = 'User') {
   return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
 }
 
-export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onHomeClick, onDashboardClick }) {
+export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, authChecked = true, user, onLogout, onHomeClick, onDashboardClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -41,7 +41,20 @@ export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onL
                 <a href="#contact">Contact</a>
             </div>
 
-            {isAuthenticated ? (
+            {!isAuthenticated ? (
+                authChecked === false ? (
+                    <div className="desktop-nav-auth" style={{ minHeight: '2.5rem' }} />
+                ) : (
+                    <div className="desktop-nav-auth">
+                        <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")} onClick={onLoginClick}>
+                            Se connecter
+                        </button>
+                        <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onSignUpClick}>
+                            S'inscrire
+                        </button>
+                    </div>
+                )
+            ) : (
                 <div className="desktop-nav-auth" ref={dropdownRef}>
                     <button
                         type="button"
@@ -95,15 +108,6 @@ export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, user, onL
                             </button>
                         </div>
                     )}
-                </div>
-            ) : (
-                <div className="desktop-nav-auth">
-                    <button type="button" className={["btn", "btn-ghost"].filter(Boolean).join(" ")} onClick={onLoginClick}>
-                        Se connecter
-                    </button>
-                    <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={onSignUpClick}>
-                        S'inscrire
-                    </button>
                 </div>
             )}
 

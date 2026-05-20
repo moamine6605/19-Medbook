@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 class PatientController extends Controller
@@ -45,6 +46,8 @@ class PatientController extends Controller
             'completed_visits' => $completedVisits,
             'health_score' => $healthScore,
             'active_prescriptions' => $activePrescriptions,
+            // No payment feature yet; keep stable API field for the UI.
+            'bills_to_pay' => 0,
         ]);
     }
 
@@ -77,6 +80,7 @@ class PatientController extends Controller
             ->map(function ($appointment) {
                 return [
                     'id' => $appointment->id,
+                    'doctor_id' => $appointment->doctor_id,
                     'doctor' => $appointment->doctor->name,
                     'specialty' => $appointment->doctor->specialty,
                     'date' => $appointment->date->format('Y-m-d'),
@@ -112,6 +116,71 @@ class PatientController extends Controller
             });
 
         return response()->json($activities);
+    }
+
+    /**
+     * Get patient profile fields (editable subset).
+     */
+    public function profile(Request $request)
+    {
+        $user = $this->patientOrFail($request);
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'birth_date' => $user->birth_date?->format('Y-m-d'),
+            'blood_type' => Schema::hasColumn('users', 'blood_type') ? $user->blood_type : null,
+            'address' => Schema::hasColumn('users', 'address') ? $user->address : null,
+            'created_at' => $user->created_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Update patient profile fields (editable subset).
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $this->patientOrFail($request);
+
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+        ];
+        if (Schema::hasColumn('users', 'birth_date')) {
+            $rules['birth_date'] = ['nullable', 'date_format:Y-m-d'];
+        }
+        if (Schema::hasColumn('users', 'blood_type')) {
+            $rules['blood_type'] = ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'];
+        }
+        if (Schema::hasColumn('users', 'address')) {
+            $rules['address'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $data = $request->validate($rules);
+
+        $user->name = $data['name'];
+        if (array_key_exists('birth_date', $data)) {
+            $user->birth_date = $data['birth_date'] ?: null;
+        }
+        if (array_key_exists('blood_type', $data)) {
+            $user->blood_type = $data['blood_type'] ?: null;
+        }
+        if (array_key_exists('address', $data)) {
+            $user->address = $data['address'] ?: null;
+        }
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profil mis à jour.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'birth_date' => $user->birth_date?->format('Y-m-d'),
+                'blood_type' => Schema::hasColumn('users', 'blood_type') ? $user->blood_type : null,
+                'address' => Schema::hasColumn('users', 'address') ? $user->address : null,
+            ],
+        ]);
     }
 
     /**

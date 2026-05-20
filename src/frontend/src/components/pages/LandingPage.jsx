@@ -22,7 +22,7 @@ function formatCount(num) {
   return num + '+';
 }
 
-export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, user, onLogout, onDashboardClick }) {
+export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthenticated, authChecked, user, onLogout, onDashboardClick }) {
   const [doctors, setDoctors] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +74,7 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                 onLoginClick={onLoginClick}
                 onSignUpClick={onSignUpClick}
                 isAuthenticated={isAuthenticated}
+                authChecked={authChecked}
                 user={user}
                 onLogout={onLogout}
                 onDashboardClick={onDashboardClick}
@@ -94,10 +95,16 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                         Dites adieu aux longues files d'attente. Prenez rendez-vous avec les meilleurs médecins en quelques secondes, gérez votre parcours de soins et concentrez-vous sur l'essentiel : votre santé.
                     </p>
                     <div className="landing-hero-actions">
-                        <button type="button" className={["btn", "btn-primary"].filter(Boolean).join(" ")} onClick={isAuthenticated ? onGetStarted : onSignUpClick}>
-                            <Calendar size={20} className="landing-hero-action-icon" />
-                            Prendre rendez-vous
-                        </button>
+                        {!isAuthenticated ? (
+                            <button
+                                type="button"
+                                className={["btn", "btn-primary"].filter(Boolean).join(" ")}
+                                onClick={onLoginClick}
+                            >
+                                <Calendar size={20} className="landing-hero-action-icon" />
+                                Prendre rendez-vous
+                            </button>
+                        ) : null}
                         <button type="button" className={["btn", "btn-outline"].filter(Boolean).join(" ")}>En savoir plus</button>
                     </div>
 
