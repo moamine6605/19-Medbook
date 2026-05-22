@@ -1,3 +1,4 @@
+import React from 'react';
 import { Activity, Menu, X, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 

@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest';
 
 // Utility functions to test
 const getInitials = (name = 'User') => {
-  return name
+  const initials = name
     .split(' ')
     .filter(Boolean)
     .map((part) => part[0])
     .join('')
     .substring(0, 2)
     .toUpperCase();
+  return initials || 'U';
 };
 
 const formatDate = (date) => {
