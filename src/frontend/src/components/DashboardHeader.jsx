@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, Home, ChevronDown } from 'lucide-react';
+import { Bell, LogOut, Home, ChevronDown, Menu } from 'lucide-react';
 import '../styles/components/DashboardHeader.css';
 
 function getInitials(name = 'User') {
   return name.split(' ').filter(Boolean).map((part) => part[0]).join('').substring(0, 2).toUpperCase();
 }
 
-export function DashboardHeader({ title, subtitle, user, onLogout, onHomeClick, notifications = [] }) {
+export function DashboardHeader({ title, subtitle, user, onLogout, onHomeClick, notifications = [], onMenuClick }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifSeen, setNotifSeen] = useState(false);
@@ -41,9 +41,14 @@ export function DashboardHeader({ title, subtitle, user, onLogout, onHomeClick, 
 
   return (
     <div className="dashboard-header">
-      <div>
+      <div className="dh-title-row">
+        <button type="button" className="btn btn-ghost dh-menu-btn" onClick={onMenuClick} aria-label="Menu">
+          <Menu size={20} />
+        </button>
+        <div>
         <h1 className="dashboard-title">{title}</h1>
         <p className="text-muted">{subtitle}</p>
+        </div>
       </div>
       <div className="dashboard-user-actions">
         {/* Notifications */}

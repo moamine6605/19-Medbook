@@ -16,6 +16,7 @@ function getInitials(name = 'User') {
 
 export function AdminDashboard({ onLogout, user, onHomeClick }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [appointmentsData, setAppointmentsData] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
@@ -118,7 +119,16 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} userRole="admin" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+            <Sidebar
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              userRole="admin"
+              user={user}
+              onLogout={onLogout}
+              onHomeClick={onHomeClick}
+              mobileOpen={sidebarOpen}
+              onMobileClose={() => setSidebarOpen(false)}
+            />
 
             <div className="main-content">
                 <DashboardHeader
@@ -128,6 +138,7 @@ export function AdminDashboard({ onLogout, user, onHomeClick }) {
                     onLogout={onLogout}
                     onHomeClick={onHomeClick}
                     notifications={recentActivity.map((a, i) => ({ id: i, action: a.action, description: a.user, time: a.time }))}
+                    onMenuClick={() => setSidebarOpen(true)}
                 />
 
                 <div className="dashboard-stats-grid">

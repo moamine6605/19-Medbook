@@ -51,6 +51,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [newSlotTime, setNewSlotTime] = useState('09:00');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userName = user?.name || 'Docteur';
 
@@ -262,7 +263,16 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
 
   return (
     <div className="app-container">
-            <Sidebar activeTab={activeTab} onTabChange={handleTabChange} userRole="doctor" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+            <Sidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              userRole="doctor"
+              user={user}
+              onLogout={onLogout}
+              onHomeClick={onHomeClick}
+              mobileOpen={sidebarOpen}
+              onMobileClose={() => setSidebarOpen(false)}
+            />
 
             <div className="main-content">
                 <DashboardHeader
@@ -272,6 +282,7 @@ export function DoctorDashboard({ onLogout, user, onHomeClick }) {
                     onLogout={onLogout}
                     onHomeClick={onHomeClick}
                     notifications={todayAppointments.map(a => ({ id: a.id, action: `${a.patient} - ${a.time}`, description: a.reason, time: a.status === 'completed' ? 'Terminé' : a.status === 'in-progress' ? 'En cours' : 'À venir' }))}
+                    onMenuClick={() => setSidebarOpen(true)}
                 />
 
                 {activeTab === 'dashboard' && (

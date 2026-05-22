@@ -122,9 +122,32 @@
 }
 
 @media (max-width: 768px) {
+    .booking-container {
+        padding: 1rem;
+    }
+
     .booking-grid-3,
     .booking-grid-2 {
         grid-template-columns: 1fr;
+    }
+
+    .booking-steps {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .booking-step-line {
+        width: 2.5rem;
+    }
+
+    .booking-doctor-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .booking-doctor-stats {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
     }
 }
 

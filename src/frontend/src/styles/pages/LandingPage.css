@@ -181,10 +181,22 @@
 }
 
 @media (max-width: 768px) {
+    .landing-hero {
+        padding: 2.5rem 1rem;
+    }
+
+    .landing-hero-title {
+        font-size: 2.25rem;
+    }
+
+    .landing-hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
     .landing-stats-grid,
     .landing-features-grid,
     .landing-doctors-grid {
         grid-template-columns: 1fr;
     }
 }
-

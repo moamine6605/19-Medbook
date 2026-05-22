@@ -66,6 +66,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
     return v === 'book' ? 'book' : 'list';
   }); // list|book
   const [bookingKey, setBookingKey] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Edit State
   const [editingAppointmentId, setEditingAppointmentId] = useState(null);
@@ -281,7 +282,16 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
 
   return (
     <div className="app-container">
-      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} userRole="patient" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        userRole="patient"
+        user={user}
+        onLogout={onLogout}
+        onHomeClick={onHomeClick}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
 
       <div className="main-content">
         <DashboardHeader
@@ -291,6 +301,7 @@ export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
           onLogout={onLogout}
           onHomeClick={onHomeClick}
           notifications={activities}
+          onMenuClick={() => setSidebarOpen(true)}
         />
 
         {activeTab === 'dashboard' && (

@@ -114,10 +114,59 @@ export function Navbar({ onLoginClick, onSignUpClick, isAuthenticated, authCheck
 
             <button
         className="mobile-menu-btn"
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label="Menu">
         
                 {mobileMenuOpen ? <X /> : <Menu />}
             </button>
+
+            {mobileMenuOpen && (
+              <>
+                <div
+                  className="mobile-menu-backdrop open"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+
+                <div className="mobile-menu-panel open">
+                  <div className="mobile-menu-section">
+                    <button type="button" className="mobile-menu-link" onClick={() => { setMobileMenuOpen(false); document.querySelector('#features')?.scrollIntoView?.({ behavior: 'smooth' }); }}>
+                      Fonctionnalites
+                    </button>
+                    <button type="button" className="mobile-menu-link" onClick={() => { setMobileMenuOpen(false); document.querySelector('#doctors')?.scrollIntoView?.({ behavior: 'smooth' }); }}>
+                      Medecins
+                    </button>
+                    <button type="button" className="mobile-menu-link" onClick={() => { setMobileMenuOpen(false); document.querySelector('#about')?.scrollIntoView?.({ behavior: 'smooth' }); }}>
+                      A propos
+                    </button>
+                    <button type="button" className="mobile-menu-link" onClick={() => { setMobileMenuOpen(false); document.querySelector('#contact')?.scrollIntoView?.({ behavior: 'smooth' }); }}>
+                      Contact
+                    </button>
+                  </div>
+
+                  <div className="mobile-menu-divider" />
+
+                  {!isAuthenticated ? (
+                    <div className="mobile-menu-section">
+                      <button type="button" className="btn btn-outline btn-full" onClick={() => { setMobileMenuOpen(false); onLoginClick?.(); }}>
+                        Se connecter
+                      </button>
+                      <button type="button" className="btn btn-primary btn-full" onClick={() => { setMobileMenuOpen(false); onSignUpClick?.(); }}>
+                        S'inscrire
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mobile-menu-section">
+                      <button type="button" className="btn btn-outline btn-full" onClick={() => { setMobileMenuOpen(false); onDashboardClick?.(); }}>
+                        Tableau de bord
+                      </button>
+                      <button type="button" className="btn btn-danger btn-full" onClick={() => { setMobileMenuOpen(false); onLogout?.(); }}>
+                        Se deconnecter
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
         </nav>);
 
 }

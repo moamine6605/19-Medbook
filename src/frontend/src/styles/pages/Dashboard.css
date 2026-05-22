@@ -346,3 +346,55 @@
     display: flex;
     gap: 0.5rem;
 }
+
+.admin-filters-grid {
+    display: grid;
+    grid-template-columns: 1fr 12rem 12rem 12rem;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.admin-filters-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 12rem;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .dashboard-user-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .dashboard-appointment-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-appointment-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .dashboard-appointment-meta {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .dashboard-patient-details {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .admin-filters-grid,
+    .admin-filters-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}

@@ -21,7 +21,9 @@ export function Sidebar({
   userRole = 'patient',
   user = null,
   onLogout = () => {},
-  onHomeClick = () => {}
+  onHomeClick = () => {},
+  mobileOpen = false,
+  onMobileClose = () => {}
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,7 +59,9 @@ export function Sidebar({
   patientMenuItems;
 
   return (
-    <div className="sidebar">
+    <>
+      <div className={`sidebar-backdrop ${mobileOpen ? 'open' : ''}`} onClick={onMobileClose} />
+      <div className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
             {/* Logo */}
             <div className="sidebar-header" onClick={onHomeClick} style={{ cursor: 'pointer' }}>
                 <div className="sidebar-logo-container">
@@ -92,6 +96,7 @@ export function Sidebar({
                 } else {
                   onTabChange(item.id);
                 }
+                onMobileClose?.();
               }}
               className={`sidebar-item ${isActive ? 'active' : ''}`}>
               
@@ -104,11 +109,12 @@ export function Sidebar({
 
             {/* Bottom Actions */}
             <div className="sidebar-footer">
-                <button className="sidebar-item sidebar-logout-btn" onClick={onLogout}>
+                <button className="sidebar-item sidebar-logout-btn" onClick={() => { onMobileClose?.(); onLogout?.(); }}>
                     <LogOut size={20} />
                     <span>Se déconnecter</span>
                 </button>
             </div>
-        </div>);
+        </div>
+    </>);
 
 }

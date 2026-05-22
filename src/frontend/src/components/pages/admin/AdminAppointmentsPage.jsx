@@ -23,6 +23,7 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = user?.name || 'Administrateur';
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -93,7 +94,14 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
 
   return (
     <div className="app-container">
-      <Sidebar userRole="admin" user={user} onLogout={onLogout} onHomeClick={onHomeClick} />
+      <Sidebar
+        userRole="admin"
+        user={user}
+        onLogout={onLogout}
+        onHomeClick={onHomeClick}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
 
       <div className="main-content">
         <DashboardHeader
@@ -103,6 +111,7 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
           onLogout={onLogout}
           onHomeClick={onHomeClick}
           notifications={recentActivity.map((a, i) => ({ id: i, action: a.action, description: a.user, time: a.time }))}
+          onMenuClick={() => setSidebarOpen(true)}
         />
 
         <div className="card">
@@ -123,7 +132,7 @@ export function AdminAppointmentsPage({ onLogout, user, onHomeClick }) {
             </div>
           </div>
           <div className="card-content">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 12rem 12rem 12rem', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div className="admin-filters-grid">
               <input
                 className="input"
                 style={{ marginBottom: 0 }}

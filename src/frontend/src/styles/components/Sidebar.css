@@ -119,3 +119,41 @@
 .sidebar-logout-btn {
     color: var(--destructive);
 }
+
+.sidebar-backdrop {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 120;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .sidebar-backdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 130;
+        transform: translateX(-102%);
+        transition: transform 0.22s ease;
+        box-shadow: var(--shadow-lg);
+        max-width: min(280px, 88vw);
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+}
