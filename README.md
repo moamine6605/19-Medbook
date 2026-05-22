@@ -18,6 +18,24 @@ L'application se compose de deux parties principales :
 
 ## 🚀 Démarrage Rapide (Pour les Développeurs)
 
+### Option A (Recommandée) : Docker
+
+Prérequis : Docker Desktop (ou Docker Engine + Compose).
+
+```bash
+docker compose up --build
+```
+
+Ensuite :
+- Frontend : `http://localhost:5173`
+- Backend API : `http://localhost:8000`
+
+Notes :
+- Le backend utilise SQLite dans un volume Docker (`/var/www/backend/storage/app/database.sqlite`) et lance les migrations automatiquement au démarrage.
+- Si vous souhaitez désactiver les migrations automatiques, mettez `RUN_MIGRATIONS=false` dans le service `backend` du `docker-compose.yml`.
+
+### Option B : Sans Docker (manuel)
+
 Si vous êtes développeur et avez déjà les outils nécessaires installés, voici la configuration rapide :
 
 ```bash
@@ -56,6 +74,7 @@ Avant d'installer Medbook, assurez-vous que votre ordinateur dispose de ces prog
 - **Node.js** : Version 18 ou supérieure (inclut npm)
 - **Composer** : Pour la gestion des paquets PHP
 - **Git** : Pour cloner le projet depuis GitHub
+- (Optionnel) **Docker** : Pour exécuter le projet sans installer PHP/Node en local
 
 ### Comment vérifier si vous les avez :
 ```bash
