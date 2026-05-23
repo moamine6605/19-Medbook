@@ -1,110 +1,103 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock axios
-vi.mock('axios');
+const apiMock = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+  interceptors: {
+    request: {
+      use: vi.fn(),
+    },
+  },
+}));
 
-describe('API Service', () => {
-  const baseURL = 'http://localhost:8000/api';
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => apiMock),
+  },
+}));
+
+describe('API service', () => {
+  const storage = new Map();
+  const localStorageMock = {
+    getItem: vi.fn((key) => storage.get(key) ?? null),
+    setItem: vi.fn((key, value) => storage.set(key, String(value))),
+    removeItem: vi.fn((key) => storage.delete(key)),
+    clear: vi.fn(() => storage.clear()),
+  };
 
   beforeEach(() => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: localStorageMock,
+    });
     vi.clearAllMocks();
+    storage.clear();
   });
 
-  describe('Login', () => {
-    it('should call the login endpoint', async () => {
-      const credentials = {
-        email: 'user@example.com',
-        password: 'password123',
-      };
-
-      axios.post.mockResolvedValue({
-        data: {
-          token: 'test-token',
-          user: { id: 1, email: 'user@example.com' },
-        },
-      });
-
-      const result = await axios.post(`${baseURL}/login`, credentials);
-
-      expect(axios.post).toHaveBeenCalledWith(`${baseURL}/login`, credentials);
-      expect(result.data.token).toBe('test-token');
+  it('stores the Sanctum token and user on login', async () => {
+    const { login } = await import('../../src/services/api.js');
+    apiMock.post.mockResolvedValueOnce({
+      data: {
+        access_token: 'test-token',
+        user: { id: 1, name: 'Patient Demo', role: 'patient' },
+      },
     });
 
-    it('should handle login error', async () => {
-      const credentials = {
-        email: 'user@example.com',
-        password: 'wrong-password',
-      };
+    const result = await login('patient@demo.com', 'demo123');
 
-      axios.post.mockRejectedValue(new Error('Invalid credentials'));
-
-      try {
-        await axios.post(`${baseURL}/login`, credentials);
-      } catch (error) {
-        expect(error.message).toBe('Invalid credentials');
-      }
+    expect(apiMock.post).toHaveBeenCalledWith('/auth/login', {
+      email: 'patient@demo.com',
+      password: 'demo123',
     });
+    expect(result.access_token).toBe('test-token');
+    expect(localStorage.getItem('token')).toBe('test-token');
+    expect(JSON.parse(localStorage.getItem('user'))).toEqual(result.user);
   });
 
-  describe('Register', () => {
-    it('should call the register endpoint', async () => {
-      const userData = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: 'patient',
-      };
-
-      axios.post.mockResolvedValue({
-        data: {
-          message: 'User registered successfully',
-          user: userData,
-        },
-      });
-
-      const result = await axios.post(`${baseURL}/register`, userData);
-
-      expect(axios.post).toHaveBeenCalledWith(`${baseURL}/register`, userData);
-      expect(result.data.user.email).toBe('john@example.com');
+  it('uses the current authenticated user endpoint', async () => {
+    const { getUser } = await import('../../src/services/api.js');
+    apiMock.get.mockResolvedValueOnce({
+      data: { id: 1, email: 'patient@demo.com', role: 'patient' },
     });
+
+    const result = await getUser();
+
+    expect(apiMock.get).toHaveBeenCalledWith('/auth/user');
+    expect(result.email).toBe('patient@demo.com');
   });
 
-  describe('Get User', () => {
-    it('should fetch user data', async () => {
-      const token = 'test-token';
-      axios.get.mockResolvedValue({
-        data: {
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          role: 'patient',
-        },
-      });
+  it('sends booking data to the patient appointment endpoint', async () => {
+    const { createAppointment } = await import('../../src/services/api.js');
+    const payload = {
+      doctor_id: 2,
+      date: '2026-05-25',
+      time: '10:00',
+      type: 'in-person',
+      reason: 'Consultation',
+    };
+    apiMock.post.mockResolvedValueOnce({ data: { id: 10 } });
 
-      const result = await axios.get(`${baseURL}/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const result = await createAppointment(payload);
 
-      expect(result.data.email).toBe('john@example.com');
-    });
+    expect(apiMock.post).toHaveBeenCalledWith('/patient/appointments', payload);
+    expect(result.id).toBe(10);
   });
 
-  describe('Logout', () => {
-    it('should call the logout endpoint', async () => {
-      const token = 'test-token';
-      axios.post.mockResolvedValue({
-        data: { message: 'Logged out successfully' },
-      });
+  it('clears local auth state after logout even if the API call fails', async () => {
+    const { logout } = await import('../../src/services/api.js');
+    localStorage.setItem('token', 'test-token');
+    localStorage.setItem('user', JSON.stringify({ id: 1 }));
+    apiMock.post.mockRejectedValueOnce(new Error('network'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const result = await axios.post(
-        `${baseURL}/logout`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    await logout();
 
-      expect(axios.post).toHaveBeenCalled();
-      expect(result.data.message).toBe('Logged out successfully');
-    });
+    expect(apiMock.post).toHaveBeenCalledWith('/auth/logout');
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('user')).toBeNull();
+    consoleSpy.mockRestore();
   });
 });

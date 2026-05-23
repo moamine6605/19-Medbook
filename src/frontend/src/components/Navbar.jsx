@@ -1,3 +1,5 @@
+// React is required by the current test JSX transform.
+// eslint-disable-next-line no-unused-vars
 import React from 'react';
 import { Activity, Menu, X, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';

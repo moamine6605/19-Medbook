@@ -45,7 +45,7 @@ function getAppointmentStatus(dateStr, timeStr) {
   }
 }
 
-export function PatientDashboard({ onLogout, user, onHomeClick, onNavigate }) {
+export function PatientDashboard({ onLogout, user, onHomeClick }) {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState(() => {
     const allowed = new Set(['dashboard', 'appointments', 'history', 'profile']);

@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdminDashboardController extends Controller
 {
-    private const CONSULTATION_FEE = 50; // € per completed appointment
+    private const CONSULTATION_FEE = 200; // € per completed appointment
 
     private const SPECIALTIES = [
         'Cardiologue',

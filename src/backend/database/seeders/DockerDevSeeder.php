@@ -75,7 +75,7 @@ class DockerDevSeeder extends Seeder
         Doctor::firstOrCreate(
             ['name' => 'Dr. Emily Williams'],
             [
-                'specialty' => 'Pediatre',
+                'specialty' => 'Pédiatre',
                 'rating' => 5.0,
                 'reviews' => 312,
                 'experience' => '10 ans',
@@ -169,4 +169,3 @@ class DockerDevSeeder extends Seeder
         );
     }
 }
-

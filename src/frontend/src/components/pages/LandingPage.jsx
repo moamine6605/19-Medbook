@@ -99,7 +99,7 @@ export function LandingPage({ onGetStarted, onLoginClick, onSignUpClick, isAuthe
                             <button
                                 type="button"
                                 className={["btn", "btn-primary"].filter(Boolean).join(" ")}
-                                onClick={onLoginClick}
+                                onClick={onGetStarted}
                             >
                                 <Calendar size={20} className="landing-hero-action-icon" />
                                 Prendre rendez-vous

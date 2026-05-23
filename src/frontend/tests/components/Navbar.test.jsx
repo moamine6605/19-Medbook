@@ -18,11 +18,11 @@ describe('Navbar Component', () => {
 
   it('should render the navbar logo', () => {
     render(
-      <Navbar
-        {...mockCallbacks}
-        isAuthenticated={false}
-        user={null}
-      />
+      React.createElement(Navbar, {
+        ...mockCallbacks,
+        isAuthenticated: false,
+        user: null,
+      })
     );
     
     expect(screen.getByText('Medbook')).toBeInTheDocument();
@@ -30,11 +30,11 @@ describe('Navbar Component', () => {
 
   it('should display login and signup buttons when not authenticated', () => {
     render(
-      <Navbar
-        {...mockCallbacks}
-        isAuthenticated={false}
-        user={null}
-      />
+      React.createElement(Navbar, {
+        ...mockCallbacks,
+        isAuthenticated: false,
+        user: null,
+      })
     );
     
     const buttons = screen.getAllByRole('button');
@@ -44,11 +44,11 @@ describe('Navbar Component', () => {
   it('should display user menu when authenticated', () => {
     const user = { name: 'John Doe', role: 'patient' };
     render(
-      <Navbar
-        {...mockCallbacks}
-        isAuthenticated={true}
-        user={user}
-      />
+      React.createElement(Navbar, {
+        ...mockCallbacks,
+        isAuthenticated: true,
+        user,
+      })
     );
     
     expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -56,11 +56,11 @@ describe('Navbar Component', () => {
 
   it('should call onHomeClick when logo is clicked', () => {
     render(
-      <Navbar
-        {...mockCallbacks}
-        isAuthenticated={false}
-        user={null}
-      />
+      React.createElement(Navbar, {
+        ...mockCallbacks,
+        isAuthenticated: false,
+        user: null,
+      })
     );
     
     const logoContainer = screen.getByText('Medbook').closest('.navbar-logo-container');
@@ -71,11 +71,11 @@ describe('Navbar Component', () => {
 
   it('should display navigation links', () => {
     render(
-      <Navbar
-        {...mockCallbacks}
-        isAuthenticated={false}
-        user={null}
-      />
+      React.createElement(Navbar, {
+        ...mockCallbacks,
+        isAuthenticated: false,
+        user: null,
+      })
     );
     
     expect(screen.getByText('Fonctionnalités')).toBeInTheDocument();

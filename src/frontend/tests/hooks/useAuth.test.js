@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
+import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock hook to test
 const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = require('react').useState(false);
-  const [user, setUser] = require('react').useState(null);
-  const [loading, setLoading] = require('react').useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const login = (credentials) => {
     setLoading(true);

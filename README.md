@@ -31,7 +31,7 @@ Ensuite :
 - Backend API : `http://localhost:8000`
 
 Notes :
-- Le backend utilise SQLite dans un volume Docker (`/var/www/backend/storage/app/database.sqlite`) et lance les migrations automatiquement au démarrage.
+- Le backend utilise MySQL via Docker Compose et lance les migrations automatiquement au démarrage.
 - Le backend a besoin d'une `APP_KEY` Laravel. En mode Docker, si `APP_KEY` n'est pas fournie, le conteneur en génère une automatiquement et la persiste dans le volume `backend_storage`.
 - Si vous souhaitez désactiver les migrations automatiques, mettez `RUN_MIGRATIONS=false` dans le service `backend` du `docker-compose.yml`.
 
@@ -79,7 +79,7 @@ Avant d'installer Medbook, assurez-vous que votre ordinateur dispose de ces prog
 
 ### Comment vérifier si vous les avez :
 ```bash
-php --version    # Doit afficher PHP 8.3 ou supérieur
+php --version    # Doit afficher PHP 8.4 ou supérieur
 node --version   # Doit afficher Node.js 18 ou supérieur
 npm --version    # Doit afficher npm 9 ou supérieur
 composer --version  # Doit afficher la version de Composer

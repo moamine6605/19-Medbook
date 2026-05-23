@@ -7,6 +7,7 @@ use App\Models\Doctor;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Support\SlotPolicy;
+use Symfony\Component\HttpFoundation\Response;
 
 class DoctorAvailabilityController extends Controller
 {

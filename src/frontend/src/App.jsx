@@ -6,6 +6,7 @@ import {RegisterPage} from "./components/pages/RegisterPage.jsx";
 import {PatientDashboard} from "./components/pages/PatientDashboard.jsx";
 import {DoctorDashboard} from "./components/pages/DoctorDashboard.jsx";
 import {AdminDashboard} from "./components/pages/AdminDashboard.jsx";
+import { BookingPage } from "./components/pages/BookingPage.jsx";
 import { AdminAppointmentsPage } from "./components/pages/admin/AdminAppointmentsPage.jsx";
 import { AdminPatientsPage } from "./components/pages/admin/AdminPatientsPage.jsx";
 import { AdminDoctorsPage } from "./components/pages/admin/AdminDoctorsPage.jsx";
@@ -13,6 +14,7 @@ import { AdminArchivePage } from "./components/pages/admin/AdminArchivePage.jsx"
 import { login, register, logout, getUser } from './services/api';
 import { ToastProvider } from './components/ui/ToastProvider.jsx';
 import { onEvent } from './services/events.js';
+import { getPageTitle } from './utils/pageMeta.js';
 
 
 
@@ -79,6 +81,10 @@ function AppRoutes({ isAuthenticated, authChecked, userRole, user, setIsAuthenti
     });
     return () => off();
   }, [setIsAuthenticated, setUserRole, setUser]);
+
+  useEffect(() => {
+    document.title = getPageTitle(location.pathname);
+  }, [location.pathname]);
 
   // Remember the last visited admin route so refresh/server redirects can restore it.
   useEffect(() => {
@@ -155,6 +161,18 @@ function AppRoutes({ isAuthenticated, authChecked, userRole, user, setIsAuthenti
                   onLoginClick={() => navigate('/login')}
                   onSignUpClick={() => navigate('/register')} />
 
+            } />
+
+        <Route
+            path="/booking"
+            element={
+              !authChecked ? (
+                <p className="text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>Chargement...</p>
+              ) : (
+                <BookingPage
+                    isAuthenticated={isAuthenticated}
+                    onBookingComplete={() => navigate(isAuthenticated ? '/patient/dashboard' : '/login')} />
+              )
             } />
 
         <Route
