@@ -24,7 +24,8 @@ RUN apt-get update \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY docker/backend/entrypoint.sh /usr/local/bin/medbook-backend-entrypoint
-RUN chmod +x /usr/local/bin/medbook-backend-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/medbook-backend-entrypoint \
+  && chmod +x /usr/local/bin/medbook-backend-entrypoint
 
 EXPOSE 8000
 
