@@ -1,17 +1,21 @@
-FROM php:8.3-cli
+FROM php:8.4-cli
 
 WORKDIR /var/www/backend
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     git \
+    pkg-config \
+    curl \
     unzip \
+    libsqlite3-dev \
+    default-mysql-client \
     libzip-dev \
     libicu-dev \
   && docker-php-ext-install -j"$(nproc)" \
     pdo \
+    pdo_mysql \
     pdo_sqlite \
-    sqlite3 \
     intl \
     zip \
   && rm -rf /var/lib/apt/lists/*
@@ -25,4 +29,3 @@ RUN chmod +x /usr/local/bin/medbook-backend-entrypoint
 EXPOSE 8000
 
 ENTRYPOINT ["medbook-backend-entrypoint"]
-

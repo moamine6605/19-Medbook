@@ -5,12 +5,12 @@ namespace Tests\Unit;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Models\Appointment;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DoctorModelTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     /**
      * Test doctor creation
@@ -103,8 +103,8 @@ class DoctorModelTest extends TestCase
      */
     public function test_doctor_can_have_status()
     {
-        $doctor = Doctor::factory()->create(['status' => 'active']);
+        $doctor = Doctor::factory()->create(['status' => 'actif']);
 
-        $this->assertEquals('active', $doctor->status);
+        $this->assertEquals('actif', $doctor->status);
     }
 }

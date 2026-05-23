@@ -5,12 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Doctor;
 use App\Models\Appointment;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AppointmentTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     /**
      * Test appointment can be created
@@ -26,15 +26,15 @@ class AppointmentTest extends TestCase
             'doctor_id' => $doctor->id,
             'date' => '2026-05-25',
             'time' => '10:00',
-            'status' => 'pending',
-            'type' => 'consultation',
+            'status' => 'upcoming',
+            'type' => 'in-person',
             'reason' => 'Regular checkup',
         ]);
 
         $this->assertDatabaseHas('appointments', [
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
-            'status' => 'pending',
+            'status' => 'upcoming',
         ]);
     }
 
@@ -83,8 +83,8 @@ class AppointmentTest extends TestCase
             'date' => '2026-05-25',
         ]);
 
-        $this->assertIsString($appointment->date);
-        $this->assertEquals('2026-05-25', $appointment->date);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $appointment->date);
+        $this->assertEquals('2026-05-25', $appointment->date->format('Y-m-d'));
     }
 
     /**
@@ -92,7 +92,7 @@ class AppointmentTest extends TestCase
      */
     public function test_appointment_can_have_different_statuses()
     {
-        $statuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+        $statuses = ['upcoming', 'in-progress', 'completed', 'cancelled'];
 
         foreach ($statuses as $status) {
             $appointment = Appointment::factory()->create(['status' => $status]);
@@ -105,7 +105,7 @@ class AppointmentTest extends TestCase
      */
     public function test_appointment_can_have_different_types()
     {
-        $types = ['consultation', 'follow-up', 'checkup'];
+        $types = ['in-person', 'video'];
 
         foreach ($types as $type) {
             $appointment = Appointment::factory()->create(['type' => $type]);

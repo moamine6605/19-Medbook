@@ -13,8 +13,16 @@ class PatientSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->count(1000)->create([
-            'role' => 'patient',
-        ]);
+        // Stable demo account used by the frontend demo credentials.
+        User::firstOrCreate(
+            ['email' => 'patient@demo.com'],
+            [
+                'name' => 'Patient Demo',
+                'password' => Hash::make('demo123'),
+                'role' => 'patient',
+            ]
+        );
+
+        User::factory()->count(1000)->create(['role' => 'patient']);
     }
 }

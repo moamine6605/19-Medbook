@@ -1,4 +1,21 @@
 services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE-medbook}
+      MYSQL_USER: ${MYSQL_USER-medbook}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD-medbook}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD-root}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
   backend:
     build:
       context: .
@@ -13,11 +30,28 @@ services:
       APP_DEBUG: "true"
       APP_URL: http://localhost:8000
       FRONTEND_URL: http://localhost:5173
-      DB_CONNECTION: sqlite
-      DB_DATABASE: /var/www/backend/storage/app/database.sqlite
+      # Optional: if unset, the backend entrypoint will generate and persist a dev key in the storage volume.
+      APP_KEY: ${APP_KEY-}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: ${MYSQL_DATABASE-medbook}
+      DB_USERNAME: ${MYSQL_USER-medbook}
+      DB_PASSWORD: ${MYSQL_PASSWORD-medbook}
       RUN_MIGRATIONS: "true"
+      RUN_SEEDERS: "true"
+      DB_SEED_CLASS: DockerDevSeeder
     ports:
       - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/status"]
+      start_period: 180s
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   frontend:
     build:
@@ -29,13 +63,19 @@ services:
       - frontend_node_modules:/var/www/frontend/node_modules
     environment:
       VITE_API_BASE_URL: http://localhost:8000/api
+      # Better DX on Docker Desktop: file watching + HMR connectivity.
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      VITE_HMR_HOST: localhost
+      VITE_HMR_CLIENT_PORT: "5173"
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   backend_vendor:
   backend_storage:
   frontend_node_modules:
-
+  mysql_data:

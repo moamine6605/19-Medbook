@@ -13,17 +13,23 @@ return new class extends Migration
     {
         // Link doctors to user accounts
         Schema::table('doctors', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->onDelete('set null');
+            if (!Schema::hasColumn('doctors', 'user_id')) {
+                $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->onDelete('set null');
+            }
         });
 
         // Add reason to appointments
         Schema::table('appointments', function (Blueprint $table) {
-            $table->string('reason')->nullable()->after('type');
+            if (!Schema::hasColumn('appointments', 'reason')) {
+                $table->string('reason')->nullable()->after('type');
+            }
         });
 
         // Add birth_date to users (for patient age display)
         Schema::table('users', function (Blueprint $table) {
-            $table->date('birth_date')->nullable()->after('role');
+            if (!Schema::hasColumn('users', 'birth_date')) {
+                $table->date('birth_date')->nullable()->after('role');
+            }
         });
     }
 

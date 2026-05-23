@@ -6,12 +6,12 @@ use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Prescription;
 use App\Models\PatientActivity;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class UserModelTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     /**
      * Test user creation

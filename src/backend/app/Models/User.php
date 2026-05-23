@@ -20,6 +20,24 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Mass assignable attributes.
+     *
+     * Keep this in sync with the #[Fillable] attribute so older tooling /
+     * runtime paths that don't read PHP attributes still work.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'birth_date',
+        'blood_type',
+        'address',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
